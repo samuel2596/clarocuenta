@@ -12,7 +12,7 @@ python3 -m http.server 8000
 
 Abre [http://localhost:8000](http://localhost:8000). Usa HTTPS o localhost para que el navegador pueda instalar la app y habilitar la caché sin conexión. Visita la página en línea antes de usarla sin conexión. Para instalarla, usa la opción del navegador si está disponible. En iPhone, abre la página en Safari y usa **Compartir → Agregar a pantalla de inicio**.
 
-La app usa el almacenamiento local del navegador. Los datos pertenecen al sitio y al perfil que usaste. Cambiar de navegador o de URL inicia otro conjunto de datos. Borrar los datos del sitio elimina los movimientos y presupuestos guardados. Esta versión no incluye sincronización, cuentas de usuario ni conexión bancaria.
+La app usa el almacenamiento local del navegador. Los datos pertenecen al sitio y al perfil que usaste. Cambiar de navegador o de URL inicia otro conjunto de datos. Borrar los datos del sitio elimina los movimientos y presupuestos guardados. Sin conexión a Google Drive, los movimientos se guardan solo en el navegador. Los movimientos se capturan manualmente.
 
 ## Subir a GitHub
 
@@ -32,4 +32,16 @@ Para publicar, abre **Settings → Pages → Deploy from a branch**, elige **mai
 
 Git versiona archivos. Puedes guardar migraciones SQL y datos ficticios en el repositorio. También puedes versionar técnicamente un archivo SQLite, pero GitHub Pages lo serviría como archivo estático, sin motor de base de datos ni escrituras. Mantén fuera del repositorio las credenciales, los respaldos y los movimientos reales.
 
-Para sincronizar datos entre dispositivos, una ampliación posible es Supabase con PostgreSQL, Supabase Auth y políticas por usuario. Versiona las migraciones en GitHub, configura los permisos y guarda los datos reales en la base de datos. Consulta la [documentación sobre seguridad por fila](https://supabase.com/docs/guides/database/postgres/row-level-security).
+## Conectar Google Drive
+
+1. Abre la [consola de Google Cloud](https://console.cloud.google.com/), crea un proyecto **ClaroCuenta** y [habilita Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com).
+2. En **Google Auth Platform → Branding**, configura el nombre **ClaroCuenta**, el correo de asistencia y el contacto del desarrollador. Para una cuenta personal de Google, usa **Audience → External** y agrega tu correo en **Test users** mientras el proyecto esté en **Testing**.
+3. En **Data Access**, agrega el permiso `https://www.googleapis.com/auth/drive.file`.
+4. En **Clients → Create client**, selecciona **Web application**. En **Authorized JavaScript origins** agrega `https://samuel2596.github.io`, sin ruta. Para una prueba local, puedes agregar también `http://localhost` y `http://localhost:8000`. El flujo de ventana emergente no necesita configurar una URI de redirección.
+5. Copia solo el **Client ID**, que termina en `.apps.googleusercontent.com`, al campo `clientId` de `cloud-config.js`. Sube la actualización a la raíz del repositorio de GitHub y espera el nuevo despliegue de Pages.
+6. Abre ClaroCuenta en el navegador donde tienes los datos locales. Pulsa **Conectar Google Drive**, elige tu cuenta y autoriza el acceso. Usa **Importar datos de este navegador** para copiar tus movimientos y presupuestos. La carpeta `ClaroCuenta` y el archivo `movimientos-y-presupuestos.json` se crean al guardar por primera vez.
+7. En tu otro dispositivo, entra a la misma página y conecta la misma cuenta de Google. Pulsa **Actualizar datos** cuando hayas hecho cambios en el primero.
+
+El archivo pertenece a tu cuenta y usa el espacio disponible en Mi unidad. Evita compartirlo o editarlo manualmente si quieres conservarlo privado. La app guarda los tokens temporales de Google en memoria y puede pedir que vuelvas a conectar al recargar o al expirar el permiso. ClaroCuenta comprueba la versión del archivo antes de escribir. Usa un dispositivo a la vez al editar, ya que la comprobación y la escritura son solicitudes separadas.
+
+Consulta la [guía de OAuth web](https://developers.google.com/identity/oauth2/web/guides/get-google-api-clientid) y los [permisos de Drive](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).

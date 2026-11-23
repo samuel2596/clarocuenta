@@ -8,17 +8,33 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="stylesheet" href="./style.css">
+<script src="./cloud-config.js" defer></script>
 <script src="./app.js" defer></script>
+<script src="./cloud.js" defer></script>
 <title>ClaroCuenta | Finanzas personales</title>
 </head>
 <body>
-<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><span aria-hidden="true">C</span> ClaroCuenta</a><div class="top-controls"><span class="local">Datos en este dispositivo · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
+<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><span aria-hidden="true">C</span> ClaroCuenta</a><div class="top-controls"><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
 <main class="wrap">
   <div class="intro">
     <div><p class="eyebrow">FINANZAS PERSONALES</p><h1>Tu dinero, en claro.</h1><p>Revisa tus movimientos y decide cuánto gastar este mes.</p></div>
     <div class="period"><label for="month">Periodo</label><input id="month" type="month" required></div>
   </div>
+  <section class="panel account" aria-labelledby="account-title" id="account" hidden>
+    <h2 id="account-title">Google Drive</h2>
+    <button id="connect-drive" type="button" disabled>Conectar Google Drive</button>
+    <div id="account-session" hidden>
+      <p id="account-email"></p>
+      <div class="account-actions">
+        <button id="refresh-cloud" type="button" class="secondary">Actualizar datos</button>
+        <button id="import-local" type="button" class="secondary" hidden>Importar datos de este navegador</button>
+        <button id="sign-out" type="button" class="secondary">Desconectar</button>
+      </div>
+    </div>
+    <p id="account-status" role="status"></p>
+  </section>
   <p id="notice" role="status"></p>
+  <div id="finance-panel">
   <section class="summary" aria-label="Resumen mensual">
     <article class="balance"><h2>Saldo del mes</h2><strong id="balance"></strong><p>Ingresos menos gastos del periodo</p></article>
     <article><h2>Ingresos</h2><strong id="income"></strong></article>
@@ -35,6 +51,7 @@
       </form><div id="budget-status"></div></section>
       <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
     </div>
+  </div>
   </div>
 </main>
 <dialog id="editor"><form id="movement-form">

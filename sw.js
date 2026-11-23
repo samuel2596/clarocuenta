@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v2";
-const shell = ["./", "./index.html", "./style.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const cacheName = prefix + ":v5";
+const shell = ["./", "./index.html", "./style.css", "./app.js", "./cloud.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(shell))
@@ -14,6 +14,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (!event.request.url.startsWith(self.registration.scope)) return;
+  // Always read the project configuration from the deployment.
+  if (new URL(event.request.url).pathname.endsWith("/cloud-config.js")) return;
   if (event.request.mode === "navigate") {
     event.respondWith(fetch(event.request).catch(() => caches.open(cacheName)
       .then((cache) => cache.match("./"))));

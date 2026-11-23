@@ -89,3 +89,8 @@ dialog::backdrop { background: #17132eaa; }
 .top-controls { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
 .theme-toggle { background: #39315f; border-color: #797098; color: #fff; }
 dialog { background: var(--surface); }
+
+.account { margin-bottom: 1rem; }
+.account .form-grid { margin-top: 0; }
+.account-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+#account-status:empty { display: none; }

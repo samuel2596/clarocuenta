@@ -44,23 +44,27 @@ const editor = byId("editor");
 const form = byId("movement-form");
 const fields = form.elements;
 let editingId;
-let data = { movements: [], budgets: {} };
+const emptyData = () => ({ movements: [], budgets: {} });
+let data = emptyData();
+let localData = data;
+let saveToCloud = null;
 month.value = today.slice(0, 7);
 try {
   const saved = localStorage.getItem(storageKey);
-  if (saved) data = JSON.parse(saved);
+  if (saved) localData = data = JSON.parse(saved);
 } catch {
   byId("notice").textContent = "No se pudieron leer los datos de este navegador.";
 }
 
-function persist(next) {
+async function persist(next) {
+  if (saveToCloud) return saveToCloud(next);
   try {
     localStorage.setItem(storageKey, JSON.stringify(next));
   } catch {
     byId("notice").textContent = "No se pudo guardar. Revisa el almacenamiento de tu navegador.";
     return false;
   }
-  data = next;
+  localData = data = next;
   byId("notice").textContent = "";
   render();
   return true;
@@ -173,7 +177,7 @@ month.addEventListener("change", () => {
 });
 fields.type.addEventListener("change", setCategories);
 fields.description.addEventListener("input", () => fields.description.setCustomValidity(""));
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const description = fields.description.value.trim();
   if (!description) {
@@ -192,10 +196,11 @@ form.addEventListener("submit", (event) => {
   const previousMonth = month.value;
   month.value = item.date.slice(0, 7);
   const movements = [...data.movements.filter((entry) => entry.id !== editingId), item];
-  if (persist({ ...data, movements })) {
-    editor.close();
+  if (await persist({ ...data, movements })) {
+    if (editor.open) editor.close();
   } else {
     month.value = previousMonth;
+    render();
   }
 });
 byId("budget-form").addEventListener("submit", (event) => {
@@ -218,8 +223,11 @@ byId("demo").addEventListener("click", () => {
 });
 window.addEventListener("storage", (event) => {
   if (event.key === storageKey) {
-    data = event.newValue ? JSON.parse(event.newValue) : { movements: [], budgets: {} };
-    render();
+    localData = event.newValue ? JSON.parse(event.newValue) : emptyData();
+    if (!saveToCloud) {
+      data = localData;
+      render();
+    }
   }
 });
 render();
