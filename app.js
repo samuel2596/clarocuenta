@@ -158,7 +158,27 @@ function render() {
     difference < 0 ? "debit" : ""));
   }
   renderCustomCategories();
+  renderRecentMovements();
   window.dispatchEvent(new Event("clarocuenta:render"));
+}
+
+function renderRecentMovements() {
+  const recent = [...data.movements].reverse().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+  byId("recent-empty").hidden = recent.length > 0;
+  byId("recent-table").hidden = recent.length === 0;
+  byId("recent-rows").replaceChildren(...recent.map((item) => {
+    const credit = item.type === "income";
+    const row = document.createElement("tr");
+    const title = node("th", item.description, "recent-concept");
+    title.scope = "row";
+    row.append(
+      title,
+      node("td", item.category),
+      node("td", item.date),
+      node("td", (credit ? "+" : "−") + format(item.amount), "report-value " + (credit ? "credit" : "debit")),
+    );
+    return row;
+  }));
 }
 
 function categoryKey(label) {
@@ -220,6 +240,7 @@ function openEditor(item) {
 }
 
 byId("add").addEventListener("click", () => openEditor());
+byId("add-recent").addEventListener("click", () => openEditor());
 byId("cancel").addEventListener("click", () => editor.close());
 byId("editor-create-category").addEventListener("click", () => {
   byId("category-type").value = fields.type.value;

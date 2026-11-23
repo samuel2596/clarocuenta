@@ -8,53 +8,46 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=2">
 <link rel="apple-touch-icon" href="./icon-192.png?v=2">
-<link rel="stylesheet" href="./style.css?v=12">
+<link rel="stylesheet" href="./style.css?v=16">
 <script src="./cloud-config.js" defer></script>
-<script src="./app.js?v=12" defer></script>
-<script src="./reports.js?v=12" defer></script>
-<script src="./pwa.js?v=12" defer></script>
-<script src="./cloud.js?v=12" defer></script>
+<script src="./app.js?v=16" defer></script>
+<script src="./navigation.js?v=16" defer></script>
+<script src="./reports.js?v=16" defer></script>
+<script src="./pwa.js?v=16" defer></script>
+<script src="./cloud.js?v=16" defer></script>
 <title>ClaroCuenta | Finanzas personales</title>
 </head>
 <body>
-<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><img src="./icon-192.png?v=2" width="36" height="36" alt=""> ClaroCuenta</a><div class="top-controls"><a class="top-link" href="#categories-panel">Categorías</a><a class="top-link" href="#reports">Reportes</a><button id="reload-system" type="button" class="theme-toggle">Recargar</button><button id="install-app" type="button" class="theme-toggle">Instalar app</button><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
-<main class="wrap">
-  <div class="intro">
-    <div><p class="eyebrow">FINANZAS PERSONALES</p><h1>Tu dinero, en claro.</h1><p>Revisa tus movimientos y decide cuánto gastar este mes.</p></div>
-    <div class="period"><label for="month">Periodo</label><input id="month" type="month" required></div>
-  </div>
-  <section class="panel account" aria-labelledby="account-title" id="account" hidden>
-    <h2 id="account-title">Google Drive</h2>
-    <button id="connect-drive" type="button" disabled>Conectar Google Drive</button>
-    <div id="account-session" hidden>
-      <p id="account-email"></p>
-      <div class="account-actions">
-        <button id="save-cloud" type="button" class="secondary">Guardar ahora</button>
-        <button id="refresh-cloud" type="button" class="secondary">Actualizar datos</button>
-        <button id="import-local" type="button" class="secondary" hidden>Importar datos de este navegador</button>
-        <button id="sign-out" type="button" class="secondary">Desconectar</button>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#resumen"><img src="./icon-192.png?v=2" width="38" height="38" alt=""> ClaroCuenta</a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <a href="#resumen" data-route="resumen" aria-current="page"><span aria-hidden="true">◫</span>Resumen</a>
+      <a href="#movimientos" data-route="movimientos"><span aria-hidden="true">↔</span>Movimientos</a>
+      <a href="#reports" data-route="reports"><span aria-hidden="true">▤</span>Reportes</a>
+      <a href="#categories-panel" data-route="categories-panel"><span aria-hidden="true">◇</span>Categorías</a>
+      <a href="#configuracion" data-route="configuracion"><span aria-hidden="true">⚙</span>Configuración</a>
+    </nav>
+  </aside>
+  <main class="workspace">
+    <header class="workspace-heading">
+      <div><h1 id="view-title" tabindex="-1">Resumen</h1><p id="view-description">Consulta tu saldo y revisa cómo se distribuyen tus gastos.</p></div>
+      <div class="workspace-actions">
+        <div class="period" id="workspace-period"><label for="month">Periodo</label><input id="month" type="month" required></div>
+        <button id="reload-system" class="secondary" type="button">Recargar</button>
       </div>
-    </div>
-    <p id="sync-pending" hidden>Cambios pendientes de guardar en Drive.</p>
-    <p id="account-status" role="status"></p>
-  </section>
-  <p id="notice" role="status"></p>
-  <div id="finance-panel">
+    </header>
+    <div class="workspace-meta"><span id="storage-label">Datos en este dispositivo</span><span aria-hidden="true">·</span><span>MXN</span><button id="reconnect-drive" class="secondary reconnect-button" type="button" hidden>Reconectar Google Drive</button></div>
+    <p id="notice" role="status"></p>
+    <div id="finance-panel">
+    <section id="resumen" class="workspace-view" data-view="resumen">
   <section class="summary" aria-label="Resumen mensual">
     <article class="balance"><h2>Saldo del mes</h2><strong id="balance"></strong><p>Ingresos menos gastos del periodo</p></article>
     <article><h2>Ingresos</h2><strong id="income"></strong></article>
     <article><h2>Gastos</h2><strong id="expense"></strong></article>
   </section>
-  <div class="grid">
-    <section class="panel"><div class="section-head"><h2>Movimientos</h2><button id="add" type="button">+ Movimiento</button></div>
-      <div id="movements"></div>
-    </section>
-    <div class="stack">
-      <section class="panel"><h2>Presupuesto mensual</h2><form id="budget-form">
-        <label for="budget">Límite de gasto en MXN</label><div class="inline"><input id="budget" type="number" min="0" max="999999999" step="0.01" required placeholder="0.00"><button type="submit">Guardar</button></div>
-      </form><div id="budget-status"></div></section>
-      <section class="panel">
-        <h2>Ingresos y gastos del mes</h2>
+      <section class="panel overview-chart" aria-labelledby="overview-chart-title">
+        <h2 id="overview-chart-title">Ingresos y gastos del mes</h2>
         <div class="chart-layout">
           <div id="balance-chart" class="balance-chart" aria-hidden="true" data-empty="true"></div>
           <dl class="chart-legend">
@@ -65,11 +58,35 @@
         </div>
         <p id="chart-empty">Todavía no hay ingresos ni gastos en este mes.</p>
       </section>
+      <section class="panel recent-panel" aria-labelledby="recent-title">
+        <div class="section-head">
+          <h2 id="recent-title">Últimos movimientos</h2>
+          <button id="add-recent" type="button">Añadir movimiento</button>
+        </div>
+        <p id="recent-empty">Todavía no hay movimientos registrados.</p>
+        <div id="recent-table" class="report-scroll" role="region" aria-label="Últimos movimientos" tabindex="0" hidden>
+          <table class="data-table">
+            <thead><tr><th scope="col">Concepto</th><th scope="col">Categoría</th><th scope="col">Fecha</th><th scope="col" class="report-value">Monto</th></tr></thead>
+            <tbody id="recent-rows"></tbody>
+          </table>
+        </div>
+        <a class="recent-link" href="#movimientos">Ver todos los movimientos</a>
+      </section>
+      <div class="overview-bottom">
+      <section class="panel"><h2>Presupuesto mensual</h2><form id="budget-form">
+        <label for="budget">Límite de gasto en MXN</label><div class="inline"><input id="budget" type="number" min="0" max="999999999" step="0.01" required placeholder="0.00"><button type="submit">Guardar</button></div>
+      </form><div id="budget-status"></div></section>
       <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
-    </div>
-  </div>
-  <section id="categories-panel" class="panel category-panel" aria-labelledby="category-title">
-    <h2 id="category-title">Categorías</h2>
+      </div>
+    </section>
+    <section id="movimientos" class="workspace-view" data-view="movimientos" hidden>
+    <section class="panel"><div class="section-head"><h2>Movimientos del periodo</h2><button id="add" type="button">+ Movimiento</button></div>
+      <div id="movements"></div>
+    </section>
+    </section>
+    <section id="categories-panel" class="workspace-view" data-view="categories-panel" hidden>
+  <section class="panel category-panel" aria-labelledby="category-title">
+    <h2 id="category-title">Nueva categoría</h2>
     <form id="category-form" class="category-form" method="dialog">
       <div><label for="category-type">Tipo</label><select id="category-type" name="type">
         <option value="expense">Gasto</option><option value="income">Ingreso</option>
@@ -80,8 +97,8 @@
     <p id="category-status" role="status"></p>
     <div id="custom-categories"></div>
   </section>
-  <section id="reports" class="reports" aria-labelledby="reports-title">
-    <div class="report-heading"><h2 id="reports-title">Reportes</h2><p>Compara tus movimientos entre meses y años.</p></div>
+    </section>
+  <section id="reports" class="workspace-view" data-view="reports" hidden>
     <div class="panel report-filters" id="report-filters" hidden>
       <fieldset><legend>Años</legend><div id="report-years" class="filter-options"></div></fieldset>
       <fieldset><legend>Meses</legend><div id="report-months" class="filter-options"></div></fieldset>
@@ -97,8 +114,34 @@
       <section class="panel report-table"><h3>Movimientos registrados</h3><div id="report-movements"></div></section>
     </div>
   </section>
-  </div>
-</main>
+    </div>
+    <section id="configuracion" class="workspace-view" data-view="configuracion" hidden>
+      <div class="settings-layout">
+  <section class="panel account" aria-labelledby="account-title" id="account" hidden>
+    <h2 id="account-title">Google Drive</h2>
+    <button id="connect-drive" type="button" disabled>Conectar Google Drive</button>
+    <div id="account-session" hidden>
+      <p id="account-email"></p>
+      <div class="account-actions">
+        <button id="save-cloud" type="button" class="secondary">Guardar ahora</button>
+        <button id="refresh-cloud" type="button" class="secondary">Actualizar datos</button>
+        <button id="import-local" type="button" class="secondary" hidden>Importar datos de este navegador</button>
+        <button id="sign-out" type="button" class="secondary">Desconectar</button>
+      </div>
+    </div>
+    <p id="sync-pending" hidden>Cambios pendientes de guardar en Drive.</p>
+    <p id="account-status" role="status"></p>
+  </section>
+        <section class="panel"><h2>Preferencias de la app</h2>
+          <div class="settings-actions">
+            <button id="theme-toggle" class="secondary" type="button" aria-pressed="false">Modo oscuro</button>
+            <button id="install-app" class="secondary" type="button">Instalar app</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
 <dialog id="install-help" aria-labelledby="install-title">
   <form method="dialog">
     <h2 id="install-title">Instalar ClaroCuenta</h2>

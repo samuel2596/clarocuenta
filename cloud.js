@@ -9,6 +9,8 @@
   const account = byId("account");
   const status = byId("account-status");
   const connectButton = byId("connect-drive");
+  const reconnectButton = byId("reconnect-drive");
+  const sessionKey = "clarocuenta-drive-session:" + clientId;
   const saveButton = byId("save-cloud");
   const refreshButton = byId("refresh-cloud");
   const importButton = byId("import-local");
@@ -18,6 +20,8 @@
   const drafts = new Map();
   let tokenClient;
   let token;
+  let expiresAt = 0;
+  let needsReconnect = false;
   let user;
   let record;
   let baseData;
@@ -32,12 +36,16 @@
   function updateControls() {
     connectButton.hidden = Boolean(token);
     connectButton.disabled = !tokenClient || busy || authorizing;
+    connectButton.textContent = needsReconnect ? "Reconectar Google Drive" : "Conectar Google Drive";
+    reconnectButton.hidden = !needsReconnect || Boolean(token);
+    reconnectButton.disabled = connectButton.disabled;
     byId("account-session").hidden = !token;
     byId("account-email").textContent = user?.emailAddress ?? "";
     const reload = byId("reload-system");
-    reload.textContent = token ? "Actualizar" : "Recargar";
+    reload.textContent = token ? "Actualizar" : needsReconnect ? "Reconectar" : "Recargar";
     reload.disabled = busy || authorizing;
-    byId("storage-label").textContent = token ? "Datos de Google Drive" : "Datos en este dispositivo";
+    byId("storage-label").textContent = token ? "Datos de Google Drive"
+      : needsReconnect && user ? "Google Drive en pausa" : "Datos en este dispositivo";
     const canEdit = !busy && (!token || ready);
     financePanel.inert = !canEdit;
     form.querySelector('button[type="submit"]').disabled = !canEdit;
@@ -64,9 +72,31 @@
     }
   }
 
+  function storeSession() {
+    try {
+      if (token && expiresAt > Date.now()) sessionStorage.setItem(sessionKey, JSON.stringify({ token, expiresAt }));
+      else sessionStorage.removeItem(sessionKey);
+    } catch {
+      // Connection still works while the page is open.
+    }
+  }
+
+  function expireSession() {
+    token = undefined;
+    expiresAt = 0;
+    needsReconnect = true;
+    reloadSystem = requestConnection;
+    storeSession();
+    status.textContent = "El acceso a Drive venció. Reconecta para continuar la sincronización.";
+    updateControls();
+  }
+
   function disconnect() {
     conflict = false;
+    needsReconnect = false;
+    expiresAt = 0;
     token = user = record = baseData = undefined;
+    storeSession();
     flushCategory = null;
     ready = false;
     saveToCloud = null;
@@ -85,8 +115,7 @@
       return await task();
     } catch (error) {
       if (error.status === 401) {
-        disconnect();
-        status.textContent = "La sesión de Google terminó. Conecta Drive de nuevo.";
+        expireSession();
       } else {
         status.textContent = error.message === "duplicate"
           ? "Hay varias copias en Drive. Conserva una sola copia activa de ClaroCuenta y vuelve a actualizar."
@@ -231,6 +260,10 @@
 
   async function synchronize() {
     if (!token || busy || editor.open) return;
+    if (expiresAt && expiresAt <= Date.now()) {
+      expireSession();
+      return;
+    }
     const draft = drafts.get(user?.permissionId);
     if (draft) return writeCloud(draft);
     return refresh();
@@ -334,17 +367,30 @@
       status.textContent = "Google Drive necesita tu autorización para conectar la carpeta.";
       return;
     }
-    token = result.access_token;
+    const lifetime = Number(result.expires_in);
+    await connectWithToken(result.access_token, Number.isFinite(lifetime) && lifetime > 0 ? Date.now() + lifetime * 1000 : 0);
+  }
+
+  async function connectWithToken(accessToken, expiry) {
+    token = accessToken;
+    expiresAt = expiry;
+    ready = false;
     saveToCloud = queueSave;
     flushCategory = synchronize;
     reloadSystem = synchronize;
     byId("category-status").textContent = "";
-    data = emptyData();
+    if (!user) data = emptyData();
     if (editor.open) editor.close();
     render();
     const connected = await run(async () => {
       const response = await request(api, "about", { fields: "user(emailAddress,permissionId)" });
-      user = (await response.json()).user;
+      const connectedUser = (await response.json()).user;
+      if (user?.permissionId !== connectedUser.permissionId) {
+        record = baseData = undefined;
+        data = emptyData();
+        render();
+      }
+      user = connectedUser;
       try {
         if (localStorage.getItem("clarocuenta-drive-import:" + user.permissionId)) imported.add(user.permissionId);
       } catch {
@@ -367,25 +413,32 @@
         data = pending.next;
         render();
       }
+      needsReconnect = false;
+      storeSession();
       status.textContent = "Google Drive conectado.";
       return true;
     }, "No se pudo abrir ClaroCuenta en Drive. Revisa la conexión y vuelve a intentarlo.");
     if (!connected && !user) {
+      const expired = needsReconnect;
       disconnect();
+      if (expired) expireSession();
       updateControls();
     }
   }
 
-  connectButton.addEventListener("click", () => {
+  function requestConnection() {
+    if (!tokenClient || busy || authorizing) return;
     status.textContent = "Selecciona tu cuenta de Google.";
     authorizing = true;
     updateControls();
     try {
-      tokenClient.requestAccessToken({ prompt: "select_account" });
+      tokenClient.requestAccessToken({ prompt: needsReconnect ? "" : "select_account" });
     } catch {
       onPopupError();
     }
-  });
+  }
+  connectButton.addEventListener("click", requestConnection);
+  reconnectButton.addEventListener("click", requestConnection);
   saveButton.addEventListener("click", synchronize);
   refreshButton.addEventListener("click", async () => {
     const userId = user?.permissionId;
@@ -462,6 +515,15 @@
     });
     status.textContent = "";
     updateControls();
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(sessionKey));
+      if (typeof saved?.token === "string" && Number.isFinite(saved.expiresAt)) {
+        if (saved.expiresAt > Date.now()) void connectWithToken(saved.token, saved.expiresAt);
+        else expireSession();
+      }
+    } catch {
+      // A blocked or unavailable session store does not prevent manual connection.
+    }
   });
   script.addEventListener("error", () => {
     status.textContent = "No se pudo cargar la conexión con Google. Revisa tu conexión y recarga.";

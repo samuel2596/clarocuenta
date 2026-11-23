@@ -6,6 +6,10 @@ App web progresiva para llevar finanzas personales en pesos mexicanos. Registra 
 
 Abre **Categorías**, elige **Gasto** o **Ingreso**, escribe el nombre y pulsa **Crear categoría**. La lista de categorías empieza vacía. Las que crees aparecen al registrar o editar un movimiento de ese tipo. Al editar un movimiento anterior, puedes conservar la categoría que ya tenía. Con Drive conectado, las categorías forman parte de la sincronización. En la barra superior, **Actualizar** sincroniza Drive y **Recargar** vuelve a abrir la página cuando usas los datos locales.
 
+## Navegación
+
+Usa el menú para abrir Resumen, Movimientos, Reportes, Categorías o Configuración. Resumen muestra los últimos cuatro movimientos y permite añadir uno. Google Drive, el tema y la instalación están en Configuración.
+
 ## Reportes e instalación
 
 Abre **Reportes** en la barra superior. Marca o desmarca los años y meses con movimientos para filtrar las gráficas y tablas. El ahorro de cada mes es el ingreso menos el gasto y puede ser negativo. **Mostrar todos** restablece los filtros.
@@ -52,6 +56,6 @@ Git versiona archivos. Puedes guardar migraciones SQL y datos ficticios en el re
 6. Abre ClaroCuenta en el navegador donde tienes los datos locales. Pulsa **Conectar Google Drive**, elige tu cuenta y autoriza el acceso. Usa **Importar datos de este navegador** para copiar tus movimientos y presupuestos. La carpeta `ClaroCuenta` y el archivo `movimientos-y-presupuestos.json` se crean al guardar por primera vez.
 7. En tu otro dispositivo, entra a la misma página y conecta la misma cuenta de Google. Con la app abierta y Drive conectado, cada cinco minutos se guardan los cambios pendientes o se consulta Drive si no queda nada por guardar. También puedes usar **Guardar ahora** y **Actualizar datos**. Los borradores pendientes se conservan en el navegador donde se editaron y se recuperan al conectar la misma cuenta.
 
-El archivo pertenece a tu cuenta y usa el espacio disponible en Mi unidad. Evita compartirlo o editarlo manualmente si quieres conservarlo privado. La app guarda los tokens temporales de Google en memoria y puede pedir que vuelvas a conectar al recargar o al expirar el permiso. ClaroCuenta comprueba la versión del archivo antes de escribir. Usa un dispositivo a la vez al editar, ya que la comprobación y la escritura son solicitudes separadas.
+El archivo pertenece a tu cuenta y usa el espacio disponible en Mi unidad. Evita compartirlo o editarlo manualmente si quieres conservarlo privado. La app conserva el permiso temporal en el almacenamiento de la pestaña mientras esté vigente. Puedes recargar en esa misma pestaña. Si el permiso vence, usa Reconectar Google Drive para continuar. ClaroCuenta comprueba la versión del archivo antes de escribir. Usa un dispositivo a la vez al editar, ya que la comprobación y la escritura son solicitudes separadas.
 
 Consulta la [guía de OAuth web](https://developers.google.com/identity/oauth2/web/guides/get-google-api-clientid) y los [permisos de Drive](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).

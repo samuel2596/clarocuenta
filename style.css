@@ -181,3 +181,75 @@ dialog { background: var(--surface); }
   dialog { width: calc(100% - 1.5rem); padding: .9rem; max-height: calc(100dvh - 1.5rem); }
   .form-grid { grid-template-columns: minmax(0, 1fr); gap: .65rem; }
 }
+
+.app-shell [hidden] { display: none; }
+.app-shell {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  padding: 1.4rem 1rem;
+  color: #eeebff;
+  background: #211c40;
+}
+.sidebar .brand { margin: 0 .55rem 2.1rem; font-size: 1.17rem; }
+.main-nav { display: grid; gap: .4rem; }
+.main-nav a {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .65rem .75rem;
+  min-height: 44px;
+  color: #dcd5f4;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: .9375rem;
+  font-weight: 630;
+}
+.main-nav a span { width: 1.1em; font-size: 1.1rem; text-align: center; }
+.main-nav a:hover { background: #342954; }
+.main-nav a[aria-current] { background: #44346e; color: #fff; }
+.workspace { width: min(100%, 83rem); margin-inline: auto; padding: clamp(1.4rem, 4vw, 3.4rem); min-width: 0; }
+.workspace-heading { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: .85rem 1.25rem; }
+.workspace-heading h1 { font-size: clamp(2.15rem, 5.6vw, 3.45rem); margin: 0 0 .55rem; }
+.workspace-heading p { margin: 0; }
+.workspace-actions { display: flex; align-items: end; gap: .55rem; flex-wrap: wrap; }
+.workspace-actions .period { width: auto; }
+.workspace-meta { display: flex; flex-wrap: wrap; gap: .35rem .65rem; font-size: .875rem; color: var(--muted); margin: 1rem 0 1.4rem; }
+.workspace-meta { align-items: center; }
+.reconnect-button { margin-inline-start: .25rem; }
+.overview-bottom, .settings-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.overview-bottom { margin-top: 1rem; }
+.overview-chart { container-type: inline-size; }
+.overview-chart .chart-layout { justify-content: center; padding-block: .75rem; gap: clamp(.8rem, 5cqi, 3rem); }
+.overview-chart .balance-chart { width: clamp(6rem, 32cqi, 14rem); max-width: 100%; }
+.overview-chart .chart-legend > div + div { margin-top: .75rem; }
+.workspace .summary article { padding: clamp(.85rem, 2.2vw, 1.5rem); }
+.workspace .summary { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
+.workspace .category-panel, .workspace .account { margin: 0; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+@media (max-width: 860px) {
+  .app-shell { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { height: auto; position: static; padding: .75rem; min-width: 0; }
+  .sidebar .brand { margin: 0 .25rem .65rem; }
+  .main-nav { display: flex; overflow-x: auto; padding: 2px; }
+  .main-nav a { flex: 0 0 auto; padding-inline: .55rem; gap: .3rem; }
+  .main-nav a span { display: none; }
+  .workspace { padding: 1.2rem .85rem 2rem; }
+}
+@media (max-width: 600px) {
+  .workspace .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-bottom, .settings-layout { grid-template-columns: minmax(0, 1fr); }
+  .workspace .summary .balance { grid-column: 1 / -1; }
+  .workspace-heading { align-items: start; }
+}
+
+.recent-panel { margin-top: 1rem; }
+.recent-panel .data-table tbody tr:hover { background: var(--secondary); }
+.recent-panel .recent-concept { white-space: normal; overflow-wrap: anywhere; min-width: 8rem; }
+.recent-panel .report-value { font-weight: 700; }
+.recent-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: .35rem; color: var(--accent); font-weight: 650; }
