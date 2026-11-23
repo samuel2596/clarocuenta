@@ -1,9 +1,10 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v9";
-const shell = ["./", "./index.html", "./style.css", "./app.js", "./reports.js", "./pwa.js", "./cloud.js", "./manifest.webmanifest", "./icon-192.png?v=2", "./icon-512.png?v=2"];
+const cacheName = prefix + ":v10";
+const shell = ["./", "./index.html", "./style.css?v=10", "./app.js?v=10", "./reports.js?v=10", "./pwa.js?v=10", "./cloud.js?v=10", "./manifest.webmanifest", "./icon-192.png?v=2", "./icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(shell))
+  const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
+  event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(requests))
     .then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (event) => {

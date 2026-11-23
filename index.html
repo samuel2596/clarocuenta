@@ -8,12 +8,12 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=2">
 <link rel="apple-touch-icon" href="./icon-192.png?v=2">
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=10">
 <script src="./cloud-config.js" defer></script>
-<script src="./app.js" defer></script>
-<script src="./reports.js" defer></script>
-<script src="./pwa.js" defer></script>
-<script src="./cloud.js" defer></script>
+<script src="./app.js?v=10" defer></script>
+<script src="./reports.js?v=10" defer></script>
+<script src="./pwa.js?v=10" defer></script>
+<script src="./cloud.js?v=10" defer></script>
 <title>ClaroCuenta | Finanzas personales</title>
 </head>
 <body>
@@ -70,12 +70,12 @@
   </div>
   <section id="categories-panel" class="panel category-panel" aria-labelledby="category-title">
     <h2 id="category-title">Categorías</h2>
-    <form id="category-form" class="category-form">
+    <form id="category-form" class="category-form" method="dialog">
       <div><label for="category-type">Tipo</label><select id="category-type" name="type">
         <option value="expense">Gasto</option><option value="income">Ingreso</option>
       </select></div>
       <div><label for="category-name">Nombre de la categoría</label><input id="category-name" name="label" maxlength="48" required placeholder="Ej. Gasolina"></div>
-      <button type="submit">Crear categoría</button>
+      <button id="create-category" type="submit" disabled>Crear categoría</button>
     </form>
     <p id="category-status" role="status"></p>
     <div id="custom-categories"></div>

@@ -277,6 +277,7 @@ categoryForm.addEventListener("submit", async (event) => {
   field.value = "";
   status.textContent = "Categoría creada: " + name;
 });
+byId("create-category").disabled = false;
 byId("reload-system").addEventListener("click", () => reloadSystem());
 
 window.addEventListener("storage", (event) => {
