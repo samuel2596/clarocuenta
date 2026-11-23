@@ -44,6 +44,7 @@ const emptyData = () => ({ movements: [], budgets: {} });
 let data = emptyData();
 let localData = data;
 let saveToCloud = null;
+let flushCategory = null;
 let reloadSystem = () => window.location.reload();
 month.value = today.slice(0, 7);
 try {
@@ -280,6 +281,7 @@ categoryForm.addEventListener("submit", async (event) => {
   if (!await persist({ ...data, customCategories })) return;
   field.value = "";
   status.textContent = "Categoría creada: " + name;
+  if (flushCategory) void flushCategory();
 });
 byId("create-category").disabled = false;
 byId("reload-system").addEventListener("click", () => reloadSystem());

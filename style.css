@@ -157,3 +157,27 @@ dialog { background: var(--surface); }
 .category-tags { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; margin: 0; }
 .category-tags li { padding: .35rem .65rem; border-radius: 999px; overflow-wrap: anywhere; background: var(--secondary); }
 @media (max-width: 620px) { .category-form { grid-template-columns: 1fr; } }
+
+@media (max-width: 700px) {
+  .wrap { width: calc(100% - 1.5rem); }
+  .top-inner { justify-content: start; gap: .6rem; }
+  .top-controls { width: 100%; min-width: 0; gap: .4rem; }
+  .top-controls .local { flex-basis: 100%; order: 1; }
+  .top-link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: .3rem; }
+  .top-controls button { padding-inline: .55rem; }
+  .intro { gap: .75rem; }
+  .period { width: 100%; }
+  .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+  .summary article, .panel { padding: .9rem; border-radius: 14px; }
+  .grid, .stack { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  #account-email, #account-status, .transaction > div:first-child, .chart-legend { overflow-wrap: anywhere; }
+  .account-actions button { flex: 1 1 9rem; }
+  .chart-layout { gap: .75rem; }
+  .chart-legend { min-width: 0; }
+  .report-scroll { max-width: 100%; }
+  .data-table th, .data-table td { padding: .5rem .6rem; }
+}
+@media (max-width: 390px) {
+  dialog { width: calc(100% - 1.5rem); padding: .9rem; max-height: calc(100dvh - 1.5rem); }
+  .form-grid { grid-template-columns: minmax(0, 1fr); gap: .65rem; }
+}

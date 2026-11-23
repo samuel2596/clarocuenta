@@ -20,6 +20,7 @@
   let token;
   let user;
   let record;
+  let baseData;
   let ready = false;
   let busy = false;
   let authorizing = false;
@@ -65,7 +66,8 @@
 
   function disconnect() {
     conflict = false;
-    token = user = record = undefined;
+    token = user = record = baseData = undefined;
+    flushCategory = null;
     ready = false;
     saveToCloud = null;
     reloadSystem = () => window.location.reload();
@@ -162,19 +164,69 @@
         /^\d{4}-(0[1-9]|1[0-2])$/.test(key) && Number.isSafeInteger(amount) && amount >= 0);
   }
 
+  async function readRecord(file) {
+    if (!file) return emptyData();
+    const response = await request(api, "files/" + file.id, { alt: "media" });
+    const payload = await response.json();
+    if (!validPayload(payload)) throw new Error("invalid-data");
+    return payload;
+  }
+
   async function readCloud() {
     const latest = await findRecord();
     if (ready && latest?.id === record?.id && latest?.version === record?.version) return;
-    let next = emptyData();
-    if (latest) {
-      const response = await request(api, "files/" + latest.id, { alt: "media" });
-      next = await response.json();
-      if (!validPayload(next)) throw new Error("invalid-data");
-    }
+    baseData = data = await readRecord(latest);
     record = latest;
-    data = next;
     ready = true;
     render();
+  }
+
+  function sameMovement(a, b) {
+    if (!a || !b) return a === b;
+    return ["id", "description", "date", "type", "category", "amount"].every((key) => a[key] === b[key]);
+  }
+
+  function mergeChanges(base, pending, remote, equal) {
+    const values = new Map(remote);
+    const keys = new Set([...base.keys(), ...pending.keys()]);
+    for (const key of keys) {
+      const original = base.get(key);
+      const changed = pending.get(key);
+      const current = remote.get(key);
+      if (equal(changed, original)) continue;
+      if (!equal(current, original) && !equal(current, changed)) return null;
+      if (pending.has(key)) values.set(key, changed);
+      else values.delete(key);
+    }
+    return values;
+  }
+
+  function mergeDraft(draft, remote) {
+    const pending = draft.next;
+    const customCategories = mergeCustomCategories(remote.customCategories, pending.customCategories);
+    const movements = (snapshot) => new Map(snapshot.movements.map((item) => [item.id, item]));
+    const budgets = (snapshot) => new Map(Object.entries(snapshot.budgets));
+
+    if (!draft.original) {
+      // Old drafts contain a version but no original payload. Compare their financial data directly.
+      const matches = (a, b, equal) => a.size === b.size && [...a].every(([key, value]) => equal(value, b.get(key)));
+      const same = matches(movements(pending), movements(remote), sameMovement) &&
+        matches(budgets(pending), budgets(remote), Object.is);
+      return { next: { ...remote, customCategories }, remaining: !same };
+    }
+
+    const mergedMovements = mergeChanges(
+      movements(draft.original), movements(pending), movements(remote), sameMovement);
+    const mergedBudgets = mergeChanges(
+      budgets(draft.original), budgets(pending), budgets(remote), Object.is);
+    if (!mergedMovements || !mergedBudgets) {
+      return { next: { ...remote, customCategories }, remaining: true };
+    }
+    return {
+      next: { ...remote, movements: [...mergedMovements.values()],
+        budgets: Object.fromEntries(mergedBudgets), customCategories },
+      remaining: false,
+    };
   }
 
   async function synchronize() {
@@ -195,7 +247,11 @@
   function queueSave(next) {
     if (!ready || busy) return false;
     const existing = drafts.get(user.permissionId);
-    const stored = storeDraft(user.permissionId, { next, base: existing ? existing.base : record });
+    const stored = storeDraft(user.permissionId, {
+      next,
+      base: existing ? existing.base : record,
+      original: existing ? existing.original : baseData,
+    });
     data = next;
     render();
     updateControls();
@@ -204,23 +260,38 @@
     return true;
   }
 
-  async function writeCloud({ next, base }) {
+  async function writeCloud(draft) {
     if (!ready) return false;
     const userId = user.permissionId;
     conflict = false;
     return run(async () => {
       const latest = await findRecord();
-      if (latest?.id !== base?.id || latest?.version !== base?.version) {
-        conflict = true;
-        status.textContent = "Otro dispositivo cambió los datos en Drive. Tus cambios siguen pendientes. Usa Actualizar datos si quieres descartarlos y cargar la versión de Drive.";
-        return false;
+      let { next } = draft;
+      let remaining = false;
+      let categoryChanged = true;
+      if (latest?.id !== draft.base?.id || latest?.version !== draft.base?.version) {
+        // A missing or replaced record may have been deliberately removed in Drive.
+        if (draft.base && latest?.id !== draft.base.id) {
+          conflict = true;
+          status.textContent = "El archivo de Drive se movió o se reemplazó. Tus cambios siguen pendientes.";
+          return false;
+        }
+        const remote = await readRecord(latest);
+        ({ next, remaining } = mergeDraft(draft, remote));
+        categoryChanged = JSON.stringify(mergeCustomCategories(remote.customCategories)) !==
+          JSON.stringify(next.customCategories);
+        if (remaining && !categoryChanged) {
+          conflict = true;
+          status.textContent = "Hay cambios pendientes en movimientos o presupuestos que Drive no pudo combinar. Actualizar datos permite cargar la versión de Drive.";
+          return false;
+        }
       }
       const parent = latest ? null : await findOrCreateFolder();
 
       const payload = JSON.stringify(next);
       let response;
-      if (record) {
-        response = await request(uploadApi, "files/" + record.id, { uploadType: "media", fields: "id,version" }, {
+      if (latest) {
+        response = await request(uploadApi, "files/" + latest.id, { uploadType: "media", fields: "id,version" }, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: payload,
@@ -241,6 +312,12 @@
         });
       }
       record = await response.json();
+      baseData = next;
+      if (remaining) {
+        conflict = true;
+        status.textContent = "Categorías guardadas en Drive. Aún quedan cambios pendientes en movimientos o presupuestos.";
+        return false;
+      }
       storeDraft(userId);
       data = next;
       render();
@@ -259,6 +336,7 @@
     }
     token = result.access_token;
     saveToCloud = queueSave;
+    flushCategory = synchronize;
     reloadSystem = synchronize;
     byId("category-status").textContent = "";
     data = emptyData();
@@ -277,7 +355,7 @@
       if (!pending) {
         try {
           const saved = JSON.parse(localStorage.getItem("clarocuenta-drive-draft:" + user.permissionId));
-          if (validPayload(saved?.next)) {
+          if (validPayload(saved?.next) && (!saved.original || validPayload(saved.original))) {
             drafts.set(user.permissionId, saved);
             pending = saved;
           }
