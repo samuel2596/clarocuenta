@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v7";
-const shell = ["./", "./index.html", "./style.css", "./app.js", "./reports.js", "./pwa.js", "./cloud.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const cacheName = prefix + ":v8";
+const shell = ["./", "./index.html", "./style.css", "./app.js", "./reports.js", "./pwa.js", "./cloud.js", "./manifest.webmanifest", "./icon-192.png?v=2", "./icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(shell))

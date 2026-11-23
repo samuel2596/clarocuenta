@@ -1,6 +1,6 @@
 # ClaroCuenta
 
-App web progresiva para llevar finanzas personales en pesos mexicanos. Registra ingresos y gastos manualmente, edita movimientos, consulta el saldo mensual, revisa gastos por categoría y fija un presupuesto por mes. El botón **Cargar datos de ejemplo** crea movimientos ficticios en el periodo seleccionado.
+App web progresiva para llevar finanzas personales en pesos mexicanos. Registra ingresos y gastos manualmente, edita movimientos, consulta el saldo mensual, revisa gastos por categoría y fija un presupuesto por mes.
 
 ## Reportes e instalación
 

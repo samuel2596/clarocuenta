@@ -126,7 +126,6 @@ function render() {
     movements.append(row);
   }
   if (!entries.length) movements.append(node("p", "Todavía no hay movimientos en este periodo.", "empty"));
-  byId("demo").hidden = entries.length > 0;
   byId("balance").textContent = format(income - expense);
   byId("income").textContent = format(income);
   byId("expense").textContent = format(expense);
@@ -218,19 +217,6 @@ byId("budget-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const limit = Math.round(Number(byId("budget").value) * 100);
   persist({ ...data, budgets: { ...data.budgets, [month.value]: limit } });
-});
-byId("demo").addEventListener("click", () => {
-  const examples = [
-    ["Nómina", "income", "Sueldo", 22000, "01"],
-    ["Renta", "expense", "Vivienda", 6000, "03"],
-    ["Supermercado", "expense", "Comida", 1230.5, "08"],
-    ["Gasolina", "expense", "Transporte", 750, "11"],
-  ].map(([description, type, category, amount, day]) => ({
-    id: crypto.randomUUID(), description, type, category,
-    amount: Math.round(amount * 100), date: month.value + "-" + day,
-  }));
-  const budgets = { [month.value]: 1100000, ...data.budgets };
-  persist({ movements: [...data.movements, ...examples], budgets });
 });
 window.addEventListener("storage", (event) => {
   if (event.key === storageKey) {
