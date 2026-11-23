@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#242048">
+<meta name="description" content="Organiza tus ingresos, gastos y presupuestos.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="./style.css">
+<script src="./app.js" defer></script>
+<title>ClaroCuenta | Finanzas personales</title>
+</head>
+<body>
+<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><span aria-hidden="true">C</span> ClaroCuenta</a><div class="top-controls"><span class="local">Datos en este dispositivo · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
+<main class="wrap">
+  <div class="intro">
+    <div><p class="eyebrow">FINANZAS PERSONALES</p><h1>Tu dinero, en claro.</h1><p>Revisa tus movimientos y decide cuánto gastar este mes.</p></div>
+    <div class="period"><label for="month">Periodo</label><input id="month" type="month" required></div>
+  </div>
+  <p id="notice" role="status"></p>
+  <section class="summary" aria-label="Resumen mensual">
+    <article class="balance"><h2>Saldo del mes</h2><strong id="balance"></strong><p>Ingresos menos gastos del periodo</p></article>
+    <article><h2>Ingresos</h2><strong id="income"></strong></article>
+    <article><h2>Gastos</h2><strong id="expense"></strong></article>
+  </section>
+  <div class="grid">
+    <section class="panel"><div class="section-head"><h2>Movimientos</h2><button id="add" type="button">+ Movimiento</button></div>
+      <div id="movements"></div>
+      <button id="demo" class="secondary" type="button">Cargar datos de ejemplo</button>
+    </section>
+    <div class="stack">
+      <section class="panel"><h2>Presupuesto mensual</h2><form id="budget-form">
+        <label for="budget">Límite de gasto en MXN</label><div class="inline"><input id="budget" type="number" min="0" max="999999999" step="0.01" required placeholder="0.00"><button type="submit">Guardar</button></div>
+      </form><div id="budget-status"></div></section>
+      <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
+    </div>
+  </div>
+</main>
+<dialog id="editor"><form id="movement-form">
+  <h2 id="editor-title">Nuevo movimiento</h2>
+  <label for="description">Concepto</label><input id="description" name="description" required maxlength="80">
+  <div class="form-grid">
+    <div><label for="type">Tipo</label><select id="type" name="type"><option value="expense">Gasto</option><option value="income">Ingreso</option></select></div>
+    <div><label for="amount">Monto en MXN</label><input id="amount" name="amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
+    <div><label for="date">Fecha</label><input id="date" name="date" type="date" required></div>
+    <div><label for="category">Categoría</label><select id="category" name="category"></select></div>
+  </div>
+  <div class="actions"><button id="cancel" type="button" class="secondary">Cancelar</button><button type="submit">Guardar movimiento</button></div>
+</form></dialog>
+</body>
+</html>
