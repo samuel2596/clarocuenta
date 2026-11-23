@@ -17,7 +17,7 @@
 <title>ClaroCuenta | Finanzas personales</title>
 </head>
 <body>
-<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><img src="./icon-192.png?v=2" width="36" height="36" alt=""> ClaroCuenta</a><div class="top-controls"><a class="top-link" href="#reports">Reportes</a><button id="install-app" type="button" class="theme-toggle">Instalar app</button><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
+<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><img src="./icon-192.png?v=2" width="36" height="36" alt=""> ClaroCuenta</a><div class="top-controls"><a class="top-link" href="#categories-panel">Categorías</a><a class="top-link" href="#reports">Reportes</a><button id="reload-system" type="button" class="theme-toggle">Recargar</button><button id="install-app" type="button" class="theme-toggle">Instalar app</button><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
 <main class="wrap">
   <div class="intro">
     <div><p class="eyebrow">FINANZAS PERSONALES</p><h1>Tu dinero, en claro.</h1><p>Revisa tus movimientos y decide cuánto gastar este mes.</p></div>
@@ -68,6 +68,18 @@
       <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
     </div>
   </div>
+  <section id="categories-panel" class="panel category-panel" aria-labelledby="category-title">
+    <h2 id="category-title">Categorías</h2>
+    <form id="category-form" class="category-form">
+      <div><label for="category-type">Tipo</label><select id="category-type" name="type">
+        <option value="expense">Gasto</option><option value="income">Ingreso</option>
+      </select></div>
+      <div><label for="category-name">Nombre de la categoría</label><input id="category-name" name="label" maxlength="48" required placeholder="Ej. Gasolina"></div>
+      <button type="submit">Crear categoría</button>
+    </form>
+    <p id="category-status" role="status"></p>
+    <div id="custom-categories"></div>
+  </section>
   <section id="reports" class="reports" aria-labelledby="reports-title">
     <div class="report-heading"><h2 id="reports-title">Reportes</h2><p>Compara tus movimientos entre meses y años.</p></div>
     <div class="panel report-filters" id="report-filters" hidden>

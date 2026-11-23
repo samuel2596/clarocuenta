@@ -2,6 +2,10 @@
 
 App web progresiva para llevar finanzas personales en pesos mexicanos. Registra ingresos y gastos manualmente, edita movimientos, consulta el saldo mensual, revisa gastos por categoría y fija un presupuesto por mes.
 
+## Categorías
+
+Abre **Categorías**, elige **Gasto** o **Ingreso**, escribe el nombre y pulsa **Crear categoría**. Las categorías nuevas aparecen al registrar o editar un movimiento de ese tipo. Con Drive conectado, las categorías forman parte de la sincronización. En la barra superior, **Actualizar** sincroniza Drive y **Recargar** vuelve a abrir la página cuando usas los datos locales.
+
 ## Reportes e instalación
 
 Abre **Reportes** en la barra superior. Marca o desmarca los años y meses con movimientos para filtrar las gráficas y tablas. El ahorro de cada mes es el ingreso menos el gasto y puede ser negativo. **Mostrar todos** restablece los filtros.

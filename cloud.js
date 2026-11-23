@@ -33,6 +33,9 @@
     connectButton.disabled = !tokenClient || busy || authorizing;
     byId("account-session").hidden = !token;
     byId("account-email").textContent = user?.emailAddress ?? "";
+    const reload = byId("reload-system");
+    reload.textContent = token ? "Actualizar" : "Recargar";
+    reload.disabled = busy || authorizing;
     byId("storage-label").textContent = token ? "Datos de Google Drive" : "Datos en este dispositivo";
     const canEdit = !busy && (!token || ready);
     financePanel.inert = !canEdit;
@@ -43,7 +46,8 @@
     byId("sync-pending").hidden = !pending;
     importButton.disabled = !ready || busy;
     importButton.hidden = !user || imported.has(user.permissionId) ||
-      (!localData.movements.length && !Object.keys(localData.budgets).length);
+      (!localData.movements.length && !Object.keys(localData.budgets).length &&
+        !Object.values(localData.customCategories ?? {}).some((items) => items.length));
   }
 
   function storeDraft(userId, draft) {
@@ -64,6 +68,8 @@
     token = user = record = undefined;
     ready = false;
     saveToCloud = null;
+    reloadSystem = () => window.location.reload();
+    byId("category-status").textContent = "";
     if (editor.open) editor.close();
     data = localData;
     render();
@@ -142,7 +148,12 @@
   }
 
   function validPayload(value) {
-    return value && Array.isArray(value.movements) && value.movements.every((item) =>
+    const custom = value?.customCategories;
+    const validCategories = custom === undefined || (custom && typeof custom === "object" &&
+      !Array.isArray(custom) && Object.entries(custom).every(([type, labels]) =>
+        ["expense", "income"].includes(type) && Array.isArray(labels) &&
+        labels.every((label) => typeof label === "string" && label.trim() && label.length <= 48)));
+    return validCategories && value && Array.isArray(value.movements) && value.movements.every((item) =>
       item && typeof item.id === "string" && typeof item.description === "string" &&
       typeof item.date === "string" && ["income", "expense"].includes(item.type) &&
       typeof item.category === "string" && Number.isSafeInteger(item.amount) && item.amount > 0) &&
@@ -248,6 +259,8 @@
     }
     token = result.access_token;
     saveToCloud = queueSave;
+    reloadSystem = synchronize;
+    byId("category-status").textContent = "";
     data = emptyData();
     if (editor.open) editor.close();
     render();
@@ -340,6 +353,7 @@
     const next = {
       movements: [...data.movements, ...localData.movements.filter((item) => !existing.has(item.id))],
       budgets: { ...localData.budgets, ...data.budgets },
+      customCategories: mergeCustomCategories(data.customCategories, localData.customCategories),
     };
     if (!queueSave(next) || !await synchronize()) return;
     imported.add(userId);

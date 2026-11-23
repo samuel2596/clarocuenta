@@ -48,6 +48,7 @@ const emptyData = () => ({ movements: [], budgets: {} });
 let data = emptyData();
 let localData = data;
 let saveToCloud = null;
+let reloadSystem = () => window.location.reload();
 month.value = today.slice(0, 7);
 try {
   const saved = localStorage.getItem(storageKey);
@@ -159,11 +160,50 @@ function render() {
       : "Superaste tu presupuesto de " + format(budget) + " por " + format(-difference),
     difference < 0 ? "debit" : ""));
   }
+  renderCustomCategories();
   window.dispatchEvent(new Event("clarocuenta:render"));
 }
 
-function setCategories() {
-  fields.category.replaceChildren(...options[fields.type.value].map((label) => new Option(label, label)));
+function categoryKey(label) {
+  return label.normalize("NFKC").trim().toLocaleLowerCase("es-MX");
+}
+
+function mergeCustomCategories(preferred, extra) {
+  return Object.fromEntries(Object.keys(options).map((type) => {
+    const used = new Set(options[type].map(categoryKey));
+    const custom = [];
+    for (const label of [...(preferred?.[type] ?? []), ...(extra?.[type] ?? [])]) {
+      const key = categoryKey(label);
+      if (!key || used.has(key)) continue;
+      used.add(key);
+      custom.push(label);
+    }
+    return [type, custom];
+  }));
+}
+
+function renderCustomCategories() {
+  const custom = data.customCategories;
+  const list = byId("custom-categories");
+  list.replaceChildren();
+  for (const [type, name] of [["expense", "Gastos"], ["income", "Ingresos"]]) {
+    const categories = custom?.[type] ?? [];
+    if (!categories.length) continue;
+    const group = node("div", "", "category-group");
+    group.append(node("h3", name, ""));
+    const tags = node("ul", "", "category-tags");
+    for (const label of categories) tags.append(node("li", label, ""));
+    group.append(tags);
+    list.append(group);
+  }
+}
+
+function setCategories(current) {
+  const type = fields.type.value;
+  const labels = [...options[type], ...(data.customCategories?.[type] ?? [])];
+  if (typeof current === "string" && !labels.includes(current)) labels.push(current);
+  fields.category.replaceChildren(...labels.map((label) => new Option(label, label)));
+  if (typeof current === "string") fields.category.value = current;
 }
 
 function openEditor(item) {
@@ -174,8 +214,7 @@ function openEditor(item) {
   fields.type.value = item?.type ?? "expense";
   fields.amount.value = item ? (item.amount / 100).toFixed(2) : "";
   fields.date.value = item?.date ?? (today.startsWith(month.value) ? today : month.value + "-01");
-  setCategories();
-  if (item) fields.category.value = item.category;
+  setCategories(item?.category);
   editor.showModal();
 }
 
@@ -218,6 +257,28 @@ byId("budget-form").addEventListener("submit", (event) => {
   const limit = Math.round(Number(byId("budget").value) * 100);
   persist({ ...data, budgets: { ...data.budgets, [month.value]: limit } });
 });
+const categoryForm = byId("category-form");
+categoryForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const field = categoryForm.elements.label;
+  const type = categoryForm.elements.type.value;
+  const name = field.value.trim().replace(/\s+/g, " ");
+  const status = byId("category-status");
+  if (!name) {
+    status.textContent = "Escribe un nombre para la categoría.";
+    return;
+  }
+  const customCategories = mergeCustomCategories(data.customCategories, { [type]: [name] });
+  if (customCategories[type].length === (data.customCategories?.[type]?.length ?? 0)) {
+    status.textContent = "Ya existe una categoría con ese nombre para este tipo.";
+    return;
+  }
+  if (!await persist({ ...data, customCategories })) return;
+  field.value = "";
+  status.textContent = "Categoría creada: " + name;
+});
+byId("reload-system").addEventListener("click", () => reloadSystem());
+
 window.addEventListener("storage", (event) => {
   if (event.key === storageKey) {
     localData = event.newValue ? JSON.parse(event.newValue) : emptyData();

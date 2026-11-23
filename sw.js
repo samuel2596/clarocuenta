@@ -1,5 +1,5 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v8";
+const cacheName = prefix + ":v9";
 const shell = ["./", "./index.html", "./style.css", "./app.js", "./reports.js", "./pwa.js", "./cloud.js", "./manifest.webmanifest", "./icon-192.png?v=2", "./icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
