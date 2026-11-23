@@ -4,7 +4,7 @@ App web progresiva para llevar finanzas personales en pesos mexicanos. Registra 
 
 ## Categorías
 
-Abre **Categorías**, elige **Gasto** o **Ingreso**, escribe el nombre y pulsa **Crear categoría**. Las categorías nuevas aparecen al registrar o editar un movimiento de ese tipo. Con Drive conectado, las categorías forman parte de la sincronización. En la barra superior, **Actualizar** sincroniza Drive y **Recargar** vuelve a abrir la página cuando usas los datos locales.
+Abre **Categorías**, elige **Gasto** o **Ingreso**, escribe el nombre y pulsa **Crear categoría**. La lista de categorías empieza vacía. Las que crees aparecen al registrar o editar un movimiento de ese tipo. Al editar un movimiento anterior, puedes conservar la categoría que ya tenía. Con Drive conectado, las categorías forman parte de la sincronización. En la barra superior, **Actualizar** sincroniza Drive y **Recargar** vuelve a abrir la página cuando usas los datos locales.
 
 ## Reportes e instalación
 

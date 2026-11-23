@@ -32,10 +32,6 @@ const byId = (id) => document.getElementById(id);
 const storageKey = "clarocuenta-v1";
 const money = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
 const format = (cents) => money.format(cents / 100);
-const options = {
-  expense: ["Vivienda", "Comida", "Transporte", "Servicios", "Ocio", "Salud", "Otros"],
-  income: ["Sueldo", "Freelance", "Otros"],
-};
 const now = new Date();
 const today = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
   .map((part) => String(part).padStart(2, "0")).join("-");
@@ -169,8 +165,8 @@ function categoryKey(label) {
 }
 
 function mergeCustomCategories(preferred, extra) {
-  return Object.fromEntries(Object.keys(options).map((type) => {
-    const used = new Set(options[type].map(categoryKey));
+  return Object.fromEntries(["expense", "income"].map((type) => {
+    const used = new Set();
     const custom = [];
     for (const label of [...(preferred?.[type] ?? []), ...(extra?.[type] ?? [])]) {
       const key = categoryKey(label);
@@ -200,9 +196,13 @@ function renderCustomCategories() {
 
 function setCategories(current) {
   const type = fields.type.value;
-  const labels = [...options[type], ...(data.customCategories?.[type] ?? [])];
+  const labels = [...(data.customCategories?.[type] ?? [])];
   if (typeof current === "string" && !labels.includes(current)) labels.push(current);
-  fields.category.replaceChildren(...labels.map((label) => new Option(label, label)));
+  const placeholder = new Option(labels.length ? "Selecciona una categoría" : "Sin categorías para este tipo", "");
+  placeholder.disabled = true;
+  fields.category.replaceChildren(placeholder, ...labels.map((label) => new Option(label, label)));
+  fields.category.value = "";
+  byId("editor-category-help").hidden = Boolean(labels.length);
   if (typeof current === "string") fields.category.value = current;
 }
 
@@ -220,6 +220,10 @@ function openEditor(item) {
 
 byId("add").addEventListener("click", () => openEditor());
 byId("cancel").addEventListener("click", () => editor.close());
+byId("editor-create-category").addEventListener("click", () => {
+  byId("category-type").value = fields.type.value;
+  editor.close();
+});
 month.addEventListener("change", () => {
   if (!month.value) month.value = today.slice(0, 7);
   render();
