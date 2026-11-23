@@ -9,11 +9,13 @@
   const account = byId("account");
   const status = byId("account-status");
   const connectButton = byId("connect-drive");
+  const saveButton = byId("save-cloud");
   const refreshButton = byId("refresh-cloud");
   const importButton = byId("import-local");
   const signOutButton = byId("sign-out");
   const financePanel = byId("finance-panel");
   const imported = new Set();
+  const drafts = new Map();
   let tokenClient;
   let token;
   let user;
@@ -21,6 +23,7 @@
   let ready = false;
   let busy = false;
   let authorizing = false;
+  let conflict = false;
 
   account.hidden = false;
   status.textContent = "Cargando conexión con Google…";
@@ -35,12 +38,29 @@
     financePanel.inert = !canEdit;
     form.querySelector('button[type="submit"]').disabled = !canEdit;
     refreshButton.disabled = signOutButton.disabled = busy;
+    const pending = Boolean(user && drafts.has(user.permissionId));
+    saveButton.disabled = busy || !pending;
+    byId("sync-pending").hidden = !pending;
     importButton.disabled = !ready || busy;
     importButton.hidden = !user || imported.has(user.permissionId) ||
       (!localData.movements.length && !Object.keys(localData.budgets).length);
   }
 
+  function storeDraft(userId, draft) {
+    const key = "clarocuenta-drive-draft:" + userId;
+    if (draft) drafts.set(userId, draft);
+    else drafts.delete(userId);
+    try {
+      if (draft) localStorage.setItem(key, JSON.stringify(draft));
+      else localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function disconnect() {
+    conflict = false;
     token = user = record = undefined;
     ready = false;
     saveToCloud = null;
@@ -146,24 +166,45 @@
     render();
   }
 
+  async function synchronize() {
+    if (!token || busy || editor.open) return;
+    const draft = drafts.get(user?.permissionId);
+    if (draft) return writeCloud(draft);
+    return refresh();
+  }
+
   function refresh() {
-    if (!token) return;
+    if (!token || busy || drafts.has(user?.permissionId)) return;
     return run(async () => {
       await readCloud();
       status.textContent = "Datos actualizados desde Drive.";
     }, "No se pudieron cargar los datos. Revisa la conexión y vuelve a actualizar.");
   }
 
-  async function writeCloud(next) {
+  function queueSave(next) {
+    if (!ready || busy) return false;
+    const existing = drafts.get(user.permissionId);
+    const stored = storeDraft(user.permissionId, { next, base: existing ? existing.base : record });
+    data = next;
+    render();
+    updateControls();
+    status.textContent = stored ? "Guardado automático cada cinco minutos."
+      : "El navegador no pudo conservar el borrador. Usa Guardar ahora antes de cerrar.";
+    return true;
+  }
+
+  async function writeCloud({ next, base }) {
     if (!ready) return false;
+    const userId = user.permissionId;
+    conflict = false;
     return run(async () => {
-      const parent = record ? null : await findOrCreateFolder();
       const latest = await findRecord();
-      if (latest?.id !== record?.id || latest?.version !== record?.version) {
-        await readCloud();
-        status.textContent = "Drive tiene cambios más recientes. Revísalos antes de guardar otra vez.";
+      if (latest?.id !== base?.id || latest?.version !== base?.version) {
+        conflict = true;
+        status.textContent = "Otro dispositivo cambió los datos en Drive. Tus cambios siguen pendientes. Usa Actualizar datos si quieres descartarlos y cargar la versión de Drive.";
         return false;
       }
+      const parent = latest ? null : await findOrCreateFolder();
 
       const payload = JSON.stringify(next);
       let response;
@@ -189,6 +230,7 @@
         });
       }
       record = await response.json();
+      storeDraft(userId);
       data = next;
       render();
       status.textContent = "Guardado en tu Google Drive.";
@@ -205,7 +247,7 @@
       return;
     }
     token = result.access_token;
-    saveToCloud = writeCloud;
+    saveToCloud = queueSave;
     data = emptyData();
     if (editor.open) editor.close();
     render();
@@ -218,6 +260,22 @@
         // The original local data remains available.
       }
       await readCloud();
+      let pending = drafts.get(user.permissionId);
+      if (!pending) {
+        try {
+          const saved = JSON.parse(localStorage.getItem("clarocuenta-drive-draft:" + user.permissionId));
+          if (validPayload(saved?.next)) {
+            drafts.set(user.permissionId, saved);
+            pending = saved;
+          }
+        } catch {
+          // Invalid or unavailable browser storage must not block access to Drive.
+        }
+      }
+      if (pending) {
+        data = pending.next;
+        render();
+      }
       status.textContent = "Google Drive conectado.";
       return true;
     }, "No se pudo abrir ClaroCuenta en Drive. Revisa la conexión y vuelve a intentarlo.");
@@ -237,8 +295,36 @@
       onPopupError();
     }
   });
-  refreshButton.addEventListener("click", refresh);
+  saveButton.addEventListener("click", synchronize);
+  refreshButton.addEventListener("click", async () => {
+    const userId = user?.permissionId;
+    const draft = drafts.get(userId);
+    if (!draft) return refresh();
+    if (await writeCloud(draft)) return refresh();
+    if (!conflict || !token || !confirm("¿Descartar los cambios pendientes y cargar la versión de Google Drive?")) return;
+    return run(async () => {
+      ready = false;
+      try {
+        await readCloud();
+      } catch (error) {
+        ready = true;
+        throw error;
+      }
+      storeDraft(userId);
+      status.textContent = "Datos actualizados desde Drive.";
+    }, "No se pudo cargar la versión de Drive. Conservamos tus cambios pendientes.");
+  });
+  window.setInterval(synchronize, 5 * 60 * 1000);
+  window.addEventListener("beforeunload", (event) => {
+    if (!drafts.size) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
   signOutButton.addEventListener("click", () => {
+    if (drafts.has(user?.permissionId)) {
+      status.textContent = "Guarda los cambios pendientes antes de desconectar.";
+      return;
+    }
     disconnect();
     updateControls();
     status.textContent = "Google Drive desconectado.";
@@ -255,7 +341,7 @@
       movements: [...data.movements, ...localData.movements.filter((item) => !existing.has(item.id))],
       budgets: { ...localData.budgets, ...data.budgets },
     };
-    if (!await persist(next)) return;
+    if (!queueSave(next) || !await synchronize()) return;
     imported.add(userId);
     try {
       localStorage.setItem("clarocuenta-drive-import:" + userId, "1");

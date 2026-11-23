@@ -94,3 +94,21 @@ dialog { background: var(--surface); }
 .account .form-grid { margin-top: 0; }
 .account-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 #account-status:empty { display: none; }
+
+.chart-layout { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.balance-chart {
+  --chart-income: #6655ca;
+  --chart-expense: #ca567c;
+  width: clamp(7rem, 19vw, 10rem);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--chart-income) var(--income-share, 0%), var(--chart-expense) 0);
+}
+.balance-chart[data-empty="true"] { background: var(--secondary); }
+.chart-legend { margin: 0; }
+.chart-legend > div + div { margin-top: .5rem; }
+.chart-legend dd { margin: .1rem 0 0; font-weight: 700; }
+.chart-swatch { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: .4em; }
+.chart-income { background: #6655ca; }
+.chart-expense { background: #ca567c; }
