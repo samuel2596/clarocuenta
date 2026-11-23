@@ -10,11 +10,13 @@
 <link rel="stylesheet" href="./style.css">
 <script src="./cloud-config.js" defer></script>
 <script src="./app.js" defer></script>
+<script src="./reports.js" defer></script>
+<script src="./pwa.js" defer></script>
 <script src="./cloud.js" defer></script>
 <title>ClaroCuenta | Finanzas personales</title>
 </head>
 <body>
-<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><span aria-hidden="true">C</span> ClaroCuenta</a><div class="top-controls"><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
+<header class="top"><div class="wrap top-inner"><a class="brand" href="./"><span aria-hidden="true">C</span> ClaroCuenta</a><div class="top-controls"><a class="top-link" href="#reports">Reportes</a><button id="install-app" type="button" class="theme-toggle">Instalar app</button><span class="local"><span id="storage-label">Datos en este dispositivo</span> · MXN</span><button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">Modo oscuro</button></div></div></header>
 <main class="wrap">
   <div class="intro">
     <div><p class="eyebrow">FINANZAS PERSONALES</p><h1>Tu dinero, en claro.</h1><p>Revisa tus movimientos y decide cuánto gastar este mes.</p></div>
@@ -66,8 +68,33 @@
       <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
     </div>
   </div>
+  <section id="reports" class="reports" aria-labelledby="reports-title">
+    <div class="report-heading"><h2 id="reports-title">Reportes</h2><p>Compara tus movimientos entre meses y años.</p></div>
+    <div class="panel report-filters" id="report-filters" hidden>
+      <fieldset><legend>Años</legend><div id="report-years" class="filter-options"></div></fieldset>
+      <fieldset><legend>Meses</legend><div id="report-months" class="filter-options"></div></fieldset>
+      <button id="report-reset" type="button" class="secondary">Mostrar todos</button>
+    </div>
+    <p id="report-empty" role="status"></p>
+    <div id="report-results" hidden>
+      <div class="report-charts">
+        <section class="panel"><h3>Evolución mensual</h3><div id="report-series"></div></section>
+        <section class="panel"><h3>Ahorro mensual</h3><div id="report-savings"></div></section>
+      </div>
+      <section class="panel report-table"><h3>Gastos por categoría y mes</h3><div id="report-pivot"></div></section>
+      <section class="panel report-table"><h3>Movimientos registrados</h3><div id="report-movements"></div></section>
+    </div>
+  </section>
   </div>
 </main>
+<dialog id="install-help" aria-labelledby="install-title">
+  <form method="dialog">
+    <h2 id="install-title">Instalar ClaroCuenta</h2>
+    <p><strong>iPhone o iPad:</strong> en Safari, toca Compartir y elige Agregar a pantalla de inicio.</p>
+    <p><strong>Android o computadora:</strong> abre el menú del navegador y busca Instalar app o Agregar a pantalla de inicio.</p>
+    <div class="actions"><button type="submit">Cerrar</button></div>
+  </form>
+</dialog>
 <dialog id="editor"><form id="movement-form">
   <h2 id="editor-title">Nuevo movimiento</h2>
   <label for="description">Concepto</label><input id="description" name="description" required maxlength="80">

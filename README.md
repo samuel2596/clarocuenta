@@ -2,6 +2,12 @@
 
 App web progresiva para llevar finanzas personales en pesos mexicanos. Registra ingresos y gastos manualmente, edita movimientos, consulta el saldo mensual, revisa gastos por categoría y fija un presupuesto por mes. El botón **Cargar datos de ejemplo** crea movimientos ficticios en el periodo seleccionado.
 
+## Reportes e instalación
+
+Abre **Reportes** en la barra superior. Marca o desmarca los años y meses con movimientos para filtrar las gráficas y tablas. El ahorro de cada mes es el ingreso menos el gasto y puede ser negativo. **Mostrar todos** restablece los filtros.
+
+Usa **Instalar app** en la barra superior. En iPhone o iPad, abre ClaroCuenta en Safari y usa **Compartir → Agregar a pantalla de inicio**. La PWA puede abrir después de una visita inicial con conexión. Google Drive necesita internet para conectarse y sincronizar.
+
 ## Probar en tu computadora
 
 Desde esta carpeta, ejecuta:

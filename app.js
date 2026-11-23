@@ -160,6 +160,7 @@ function render() {
       : "Superaste tu presupuesto de " + format(budget) + " por " + format(-difference),
     difference < 0 ? "debit" : ""));
   }
+  window.dispatchEvent(new Event("clarocuenta:render"));
 }
 
 function setCategories() {
