@@ -28,7 +28,9 @@
     const reserved = [...balances.values()].reduce((sum, amount) => sum + amount, 0);
     const excluded = reserves.reduce((sum, item) => item.included ? sum : sum + balances.get(item.id), 0);
     byId("cash-total").textContent = format(total);
-    byId("cash-reserved").textContent = format(reserved);
+    const reservedAmount = format(reserved);
+    byId("cash-reserved").textContent = reservedAmount;
+    byId("reserve-total").textContent = reservedAmount;
     const available = total - excluded;
     byId("cash-available").textContent = format(available);
     byId("chart-available-amount").textContent = format(available);
