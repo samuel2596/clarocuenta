@@ -24,6 +24,8 @@
     if (editingId && !reserves.some(({ id }) => id === editingId)) edit();
 
     const balances = reserveBalances(data);
+    const sorted = [...reserves].sort((a, b) => balances.get(b.id) - balances.get(a.id) ||
+      a.name.localeCompare(b.name, "es-MX"));
     const total = cashTotal(data);
     const reserved = [...balances.values()].reduce((sum, amount) => sum + amount, 0);
     const excluded = reserves.reduce((sum, item) => item.included ? sum : sum + balances.get(item.id), 0);
@@ -33,26 +35,33 @@
     byId("reserve-total").textContent = reservedAmount;
     const available = total - excluded;
     byId("cash-available").textContent = format(available);
-    byId("chart-available-amount").textContent = format(available);
-    const unreserved = total - reserved;
-    const included = reserved - excluded;
-    byId("chart-free-amount").textContent = format(unreserved);
-    byId("chart-included-amount").textContent = format(included);
-    byId("chart-excluded-amount").textContent = format(excluded);
-
     const chart = byId("cash-donut");
-    const canShowDistribution = total > 0 && unreserved >= 0;
-    chart.setAttribute("data-empty", String(!canShowDistribution));
-    chart.style.setProperty("--cash-free-stop", (canShowDistribution ? unreserved / total * 100 : 0) + "%");
-    chart.style.setProperty("--cash-included-stop", (canShowDistribution ? available / total * 100 : 0) + "%");
+    const chartItems = sorted.filter(({ id }) => balances.get(id) > 0);
+    let accumulated = 0;
+    const segments = [];
+    const legend = chartItems.map(({ id, name }, index) => {
+      const amount = balances.get(id);
+      const color = "hsl(" + (index * 137.508 + 192) % 360 + " 62% 53%)";
+      const start = accumulated / reserved * 100;
+      accumulated += amount;
+      segments.push(color + " " + start + "% " + accumulated / reserved * 100 + "%");
+      const label = node("dt", "");
+      const swatch = node("span", "", "chart-swatch");
+      swatch.style.backgroundColor = color;
+      label.append(swatch, node("span", name));
+      const row = node("div", "");
+      row.append(label, node("dd", format(amount)));
+      return row;
+    });
+    chart.setAttribute("data-empty", String(!segments.length));
+    chart.style.backgroundImage = segments.length ? "conic-gradient(" + segments.join(", ") + ")" : "";
+    byId("reserve-chart-legend").replaceChildren(...legend);
     const note = byId("cash-chart-note");
-    note.hidden = canShowDistribution;
-    note.textContent = unreserved < 0
-      ? "El saldo de efectivo y débito no alcanza para cubrir todos los apartados."
-      : "Aún no hay saldo de efectivo y débito para distribuir.";
+    note.hidden = Boolean(segments.length);
+    note.textContent = "Aún no hay dinero reservado en tus apartados.";
 
     const list = byId("reserve-list");
-    list.replaceChildren(...reserves.map((item) => {
+    list.replaceChildren(...sorted.map((item) => {
       const input = node("input", "");
       input.type = "checkbox";
       input.setAttribute("role", "switch");

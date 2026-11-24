@@ -142,16 +142,6 @@ function render() {
   byId("balance").textContent = format(income - expense);
   byId("income").textContent = format(income);
   byId("expense").textContent = format(expense);
-  const chart = byId("balance-chart");
-  const total = income + expense;
-  const incomeShare = total ? income / total : 0;
-  const percent = new Intl.NumberFormat("es-MX", { style: "percent", maximumFractionDigits: 1 });
-  chart.style.setProperty("--income-share", (incomeShare * 100) + "%");
-  chart.setAttribute("data-empty", String(!total));
-  byId("chart-empty").hidden = Boolean(total);
-  byId("chart-income").textContent = format(income) + (total ? " · " + percent.format(incomeShare) : "");
-  byId("chart-expense").textContent = format(expense) + (total ? " · " + percent.format(expense / total) : "");
-  byId("chart-balance").textContent = format(income - expense);
   const categories = byId("categories");
   categories.replaceChildren();
   for (const [category, value] of [...totals].sort((a, b) => b[1] - a[1])) {

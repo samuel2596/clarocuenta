@@ -93,23 +93,7 @@ dialog { background: var(--surface); }
 .account-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 #account-status:empty { display: none; }
 
-.chart-layout { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
-.balance-chart {
-  --chart-income: #6655ca;
-  --chart-expense: #ca567c;
-  width: clamp(7rem, 19vw, 10rem);
-  aspect-ratio: 1;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: conic-gradient(var(--chart-income) var(--income-share, 0%), var(--chart-expense) 0);
-}
-.balance-chart[data-empty="true"] { background: var(--secondary); }
-.chart-legend { margin: 0; }
-.chart-legend > div + div { margin-top: .5rem; }
-.chart-legend dd { margin: .1rem 0 0; font-weight: 700; }
 .chart-swatch { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: .4em; }
-.chart-income { background: #6655ca; }
-.chart-expense { background: #ca567c; }
 
 .top-link { color: inherit; font-weight: 650; text-underline-offset: .2em; }
 .top-controls [hidden] { display: none; }
@@ -170,10 +154,8 @@ dialog { background: var(--surface); }
   .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
   .summary article, .panel { padding: .9rem; border-radius: 14px; }
   .grid, .stack { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
-  #account-email, #account-status, .transaction > div:first-child, .chart-legend { overflow-wrap: anywhere; }
+  #account-email, #account-status, .transaction > div:first-child, .cash-chart-legend { overflow-wrap: anywhere; }
   .account-actions button { flex: 1 1 9rem; }
-  .chart-layout { gap: .75rem; }
-  .chart-legend { min-width: 0; }
   .report-scroll { max-width: 100%; }
   .data-table th, .data-table td { padding: .5rem .6rem; }
 }
@@ -225,12 +207,6 @@ dialog { background: var(--surface); }
 .overview-bottom, .settings-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
 .overview-bottom { margin-top: 1rem; }
 .overview-chart { container-type: inline-size; }
-.overview-chart .chart-layout { justify-content: center; padding-block: .75rem; gap: clamp(.8rem, 5cqi, 3rem); }
-.overview-chart {
-  --cash-free: #258eaa;
-  --cash-included: #8d71d9;
-  --cash-excluded: #db9a3b;
-}
 .cash-chart-layout {
   display: flex;
   flex-wrap: wrap;
@@ -246,11 +222,7 @@ dialog { background: var(--surface); }
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(
-    var(--cash-free) 0 var(--cash-free-stop, 0%),
-    var(--cash-included) var(--cash-free-stop, 0%) var(--cash-included-stop, 0%),
-    var(--cash-excluded) var(--cash-included-stop, 0%) 100%
-  );
+  background-color: var(--secondary);
 }
 .cash-donut[data-empty="true"] { background: var(--secondary); }
 .cash-donut-center {
@@ -278,13 +250,6 @@ dialog { background: var(--surface); }
   border-bottom: 1px solid var(--border);
 }
 .cash-chart-legend dd { margin: 0; font-weight: 700; }
-.cash-free { background: var(--cash-free); }
-.cash-included { background: var(--cash-included); }
-.cash-excluded { background: var(--cash-excluded); }
-.monthly-chart { border-top: 1px solid var(--border); padding-top: .85rem; }
-.monthly-chart summary { cursor: pointer; font-weight: 650; }
-.overview-chart .balance-chart { width: clamp(6rem, 24cqi, 10rem); }
-.overview-chart .chart-legend > div + div { margin-top: .75rem; }
 .workspace .summary article { padding: clamp(.85rem, 2.2vw, 1.5rem); }
 .workspace .summary { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
 .workspace .category-panel, .workspace .account { margin: 0; }
