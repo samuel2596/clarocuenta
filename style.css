@@ -478,3 +478,20 @@ dialog { background: var(--surface); }
 #reserve-progress progress { width: 100%; accent-color: var(--accent); }
 
 .reserve-description-field { grid-column: 1 / -1; }
+
+#resumen .overview-chart {
+  --cash-free: #258eaa;
+  --cash-included: #8d71d9;
+  --cash-excluded: #db9a3b;
+}
+#summary-donut[data-empty="false"] {
+  background: conic-gradient(
+    var(--cash-free) 0 var(--cash-free-stop),
+    var(--cash-included) var(--cash-free-stop) var(--cash-available-stop),
+    var(--cash-excluded) var(--cash-available-stop) 100%
+  );
+}
+.cash-free { background: var(--cash-free); }
+.cash-included { background: var(--cash-included); }
+.cash-excluded { background: var(--cash-excluded); }
+#summary-chart-note { color: var(--muted); font-size: .875rem; }

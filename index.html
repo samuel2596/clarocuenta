@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#242048">
 <meta name="description" content="Organiza tus ingresos, gastos y presupuestos.">
-<link rel="manifest" href="./manifest.webmanifest?v=34">
+<link rel="manifest" href="./manifest.webmanifest?v=35">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=2">
 <link rel="apple-touch-icon" href="./icon-192.png?v=2">
-<link rel="stylesheet" href="./style.css?v=34">
+<link rel="stylesheet" href="./style.css?v=35">
 <script src="./cloud-config.js" defer></script>
-<script src="./app.js?v=34" defer></script>
-<script src="./navigation.js?v=34" defer></script>
-<script src="./appearance.js?v=34" defer></script>
-<script src="./reports.js?v=34" defer></script>
-<script src="./pwa.js?v=34" defer></script>
-<script src="./finance.js?v=34" defer></script>
-<script src="./apartados.js?v=34" defer></script>
-<script src="./cards.js?v=34" defer></script>
-<script src="./cloud.js?v=34" defer></script>
+<script src="./app.js?v=35" defer></script>
+<script src="./navigation.js?v=35" defer></script>
+<script src="./appearance.js?v=35" defer></script>
+<script src="./reports.js?v=35" defer></script>
+<script src="./pwa.js?v=35" defer></script>
+<script src="./finance.js?v=35" defer></script>
+<script src="./apartados.js?v=35" defer></script>
+<script src="./cards.js?v=35" defer></script>
+<script src="./cloud.js?v=35" defer></script>
 <title>CuentasClaras | Finanzas personales</title>
 </head>
 <body>
@@ -71,6 +71,20 @@
     <article><h2>Ingresos</h2><strong id="income"></strong></article>
     <article><h2>Gastos</h2><strong id="expense"></strong></article>
   </section>
+      <section class="panel overview-chart" aria-labelledby="summary-chart-title">
+        <h2 id="summary-chart-title">Distribución de tu saldo</h2>
+        <div class="cash-chart-layout">
+          <div id="summary-donut" class="cash-donut" data-empty="true">
+            <div class="cash-donut-center"><span>Saldo disponible</span><strong id="chart-available-amount"></strong></div>
+          </div>
+          <dl class="cash-chart-legend">
+            <div><dt><span class="chart-swatch cash-free"></span>Dinero sin apartar</dt><dd id="chart-free-amount"></dd></div>
+            <div><dt><span class="chart-swatch cash-included"></span>Apartado disponible</dt><dd id="chart-included-amount"></dd></div>
+            <div><dt><span class="chart-swatch cash-excluded"></span>Apartado excluido</dt><dd id="chart-excluded-amount"></dd></div>
+          </dl>
+        </div>
+        <p id="summary-chart-note" hidden></p>
+      </section>
       <section class="panel recent-panel" aria-labelledby="recent-title">
         <div class="section-head">
           <h2 id="recent-title">Últimos movimientos</h2>

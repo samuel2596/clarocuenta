@@ -35,6 +35,24 @@
     byId("reserve-total").textContent = reservedAmount;
     const available = total - excluded;
     byId("cash-available").textContent = format(available);
+    const unreserved = total - reserved;
+    byId("chart-available-amount").textContent = format(available);
+    byId("chart-free-amount").textContent = format(unreserved);
+    byId("chart-included-amount").textContent = format(reserved - excluded);
+    byId("chart-excluded-amount").textContent = format(excluded);
+    const summaryChart = byId("summary-donut");
+    const showDistribution = total > 0 && unreserved >= 0;
+    summaryChart.setAttribute("data-empty", String(!showDistribution));
+    const freeStop = showDistribution ? unreserved / total * 100 : 0;
+    const availableStop = showDistribution ? available / total * 100 : 0;
+    summaryChart.style.setProperty("--cash-free-stop", freeStop + "%");
+    summaryChart.style.setProperty("--cash-available-stop", availableStop + "%");
+    const summaryNote = byId("summary-chart-note");
+    summaryNote.hidden = showDistribution;
+    summaryNote.textContent = unreserved < 0
+      ? "El saldo de efectivo y débito no alcanza para cubrir todos los apartados."
+      : "Aún no hay saldo de efectivo y débito para distribuir.";
+
     const chart = byId("cash-donut");
     const chartItems = sorted.filter(({ id }) => balances.get(id) > 0);
     let accumulated = 0;
