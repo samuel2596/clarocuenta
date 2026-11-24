@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":angular-eecdc2a8d3a4e684";
-const shell = ["./","./apartados.eecdc2a8d3a4e684.js","./app.eecdc2a8d3a4e684.js","./appearance.eecdc2a8d3a4e684.js","./cards.eecdc2a8d3a4e684.js","./cloud-config.js","./cloud.eecdc2a8d3a4e684.js","./finance.eecdc2a8d3a4e684.js","./icon-192.png","./icon-512.png","./index.html","./main-M2SFJTHG.js","./manifest.webmanifest","./pwa.eecdc2a8d3a4e684.js","./reports.eecdc2a8d3a4e684.js","./styles-7H7L3MFQ.css"];
+const cacheName = prefix + ":angular-6a32d3c40eb5cf76";
+const shell = ["./","./apartados.6a32d3c40eb5cf76.js","./app.6a32d3c40eb5cf76.js","./appearance.6a32d3c40eb5cf76.js","./cards.6a32d3c40eb5cf76.js","./cloud-config.js","./cloud.6a32d3c40eb5cf76.js","./finance.6a32d3c40eb5cf76.js","./icon-192.png","./icon-512.png","./index.html","./main-KJUOBU5V.js","./manifest.webmanifest","./pwa.6a32d3c40eb5cf76.js","./reports.6a32d3c40eb5cf76.js","./styles-EYTCLBHE.css"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
