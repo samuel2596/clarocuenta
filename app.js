@@ -3,6 +3,7 @@ const themeToggle = document.getElementById("theme-toggle");
 const themeColor = document.querySelector('meta[name="theme-color"]');
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 let selectedTheme;
+let useLocalThemePreference = () => true;
 try {
   selectedTheme = localStorage.getItem(themeKey);
 } catch {
@@ -19,11 +20,12 @@ function applyTheme() {
 themeToggle.addEventListener("click", () => {
   selectedTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   try {
-    localStorage.setItem(themeKey, selectedTheme);
+    if (useLocalThemePreference()) localStorage.setItem(themeKey, selectedTheme);
   } catch (error) {
     console.warn("No se pudo guardar el tema.", error);
   }
   applyTheme();
+  window.dispatchEvent(new Event("clarocuenta:theme-mode"));
 });
 systemTheme.addEventListener("change", applyTheme);
 applyTheme();
@@ -44,6 +46,7 @@ const emptyData = () => ({ movements: [], budgets: {} });
 let data = emptyData();
 let localData = data;
 let saveToCloud = null;
+let driveAppearanceAccount;
 let flushCategory = null;
 let reloadSystem = () => window.location.reload();
 month.value = today.slice(0, 7);

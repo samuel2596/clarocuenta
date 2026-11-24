@@ -48,6 +48,7 @@
     const reload = byId("reload-system");
     reload.textContent = token ? "Actualizar" : needsReconnect ? "Reconectar" : "Recargar";
     reload.disabled = busy || authorizing;
+    window.dispatchEvent(new Event("clarocuenta:connection"));
     byId("storage-label").textContent = token ? "Datos de Google Drive"
       : needsReconnect && user ? "Google Drive en pausa" : "Datos en este dispositivo";
     const canEdit = !busy && (!token || ready);
@@ -157,6 +158,7 @@
     needsReconnect = false;
     expiresAt = 0;
     token = user = record = baseData = undefined;
+    driveAppearanceAccount = undefined;
     storeSession();
     flushCategory = null;
     ready = false;
@@ -298,6 +300,15 @@
   function mergeDraft(draft, remote) {
     const pending = draft.next;
     const customCategories = mergeCustomCategories(remote.customCategories, pending.customCategories);
+    const preferences = { ...remote, customCategories };
+    let appearanceConflict = false;
+    if (draft.original) {
+      const original = JSON.stringify(draft.original.appearance);
+      const changed = JSON.stringify(pending.appearance);
+      const current = JSON.stringify(remote.appearance);
+      appearanceConflict = changed !== original && current !== original && current !== changed;
+      if (changed !== original && !appearanceConflict && pending.appearance) preferences.appearance = pending.appearance;
+    }
     const movements = (snapshot) => new Map(snapshot.movements.map((item) => [item.id, item]));
     const budgets = (snapshot) => new Map(Object.entries(snapshot.budgets));
 
@@ -306,7 +317,7 @@
       const matches = (a, b, equal) => a.size === b.size && [...a].every(([key, value]) => equal(value, b.get(key)));
       const same = matches(movements(pending), movements(remote), sameMovement) &&
         matches(budgets(pending), budgets(remote), Object.is);
-      return { next: { ...remote, customCategories }, remaining: !same };
+      return { next: preferences, remaining: !same };
     }
 
     const mergedMovements = mergeChanges(
@@ -314,12 +325,12 @@
     const mergedBudgets = mergeChanges(
       budgets(draft.original), budgets(pending), budgets(remote), Object.is);
     if (!mergedMovements || !mergedBudgets) {
-      return { next: { ...remote, customCategories }, remaining: true };
+      return { next: preferences, remaining: true };
     }
     return {
-      next: { ...remote, movements: [...mergedMovements.values()],
-        budgets: Object.fromEntries(mergedBudgets), customCategories },
-      remaining: false,
+      next: { ...preferences, movements: [...mergedMovements.values()],
+        budgets: Object.fromEntries(mergedBudgets) },
+      remaining: appearanceConflict,
     };
   }
 
@@ -377,7 +388,7 @@
     const latest = await findRecord();
     let { next } = draft;
     let remaining = false;
-    let categoryChanged = true;
+    let preferencesChanged = true;
     if (latest?.id !== draft.base?.id || latest?.version !== draft.base?.version) {
       // A missing or replaced record may have been deliberately removed in Drive.
       if (draft.base && latest?.id !== draft.base.id) {
@@ -387,11 +398,11 @@
       }
       const remote = await readRecord(latest);
       ({ next, remaining } = mergeDraft(draft, remote));
-      categoryChanged = JSON.stringify(mergeCustomCategories(remote.customCategories)) !==
-        JSON.stringify(next.customCategories);
-      if (remaining && !categoryChanged) {
+      preferencesChanged = JSON.stringify(mergeCustomCategories(remote.customCategories)) !==
+        JSON.stringify(next.customCategories) || JSON.stringify(remote.appearance) !== JSON.stringify(next.appearance);
+      if (remaining && !preferencesChanged) {
         conflict = true;
-        status.textContent = "Hay cambios pendientes en movimientos o presupuestos que Drive no pudo combinar. Actualizar datos permite cargar la versión de Drive.";
+        status.textContent = "Hay cambios que Drive no pudo combinar. Actualizar datos permite cargar la versión de Drive.";
         return false;
       }
     }
@@ -432,7 +443,7 @@
     baseData = next;
     if (remaining) {
       conflict = true;
-      status.textContent = "Categorías guardadas en Drive. Aún quedan cambios pendientes en movimientos o presupuestos.";
+      status.textContent = "Guardamos los cambios que se pudieron combinar. Aún queda un borrador pendiente.";
       return false;
     }
     storeDraft(userId);
@@ -476,6 +487,7 @@
         render();
       }
       user = connectedUser;
+      driveAppearanceAccount = user.permissionId;
       try {
         if (localStorage.getItem("clarocuenta-drive-import:" + user.permissionId)) imported.add(user.permissionId);
       } catch {

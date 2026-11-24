@@ -393,3 +393,8 @@ dialog { background: var(--surface); }
   .workspace-actions { grid-template-columns: minmax(0, 1fr); }
   .workspace-actions > button { justify-self: start; }
 }
+
+.appearance-sync { margin-top: 1rem; padding-top: .85rem; border-top: 1px solid var(--border); }
+.appearance-sync label { display: flex; align-items: center; gap: .5rem; min-height: 44px; margin: 0; }
+.appearance-sync input { width: 1rem; min-height: 1rem; padding: 0; flex: none; accent-color: var(--accent); }
+#appearance-sync-status:empty { display: none; }
