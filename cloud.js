@@ -1,6 +1,7 @@
 (() => {
   const clientId = window.claroCuentaCloud?.clientId;
-  if (!clientId) return;
+  const persistent = window.claroCuentaCloud?.persistentSession === true;
+  if (!clientId && !persistent) return;
 
   const scope = "https://www.googleapis.com/auth/drive.file";
   const api = "https://www.googleapis.com/drive/v3/";
@@ -18,6 +19,8 @@
   const financePanel = byId("finance-panel");
   const imported = new Set();
   const drafts = new Map();
+  const draftInstance = crypto.randomUUID();
+  let serverSnapshot;
   let tokenClient;
   let token;
   let expiresAt = 0;
@@ -29,13 +32,14 @@
   let busy = false;
   let authorizing = false;
   let conflict = false;
+  let lastSaved;
 
   account.hidden = false;
   status.textContent = "Cargando conexión con Google…";
 
   function updateControls() {
     connectButton.hidden = Boolean(token);
-    connectButton.disabled = !tokenClient || busy || authorizing;
+    connectButton.disabled = (!persistent && !tokenClient) || busy || authorizing;
     connectButton.textContent = needsReconnect ? "Reconectar Google Drive" : "Conectar Google Drive";
     reconnectButton.hidden = !needsReconnect || Boolean(token);
     reconnectButton.disabled = connectButton.disabled;
@@ -51,6 +55,10 @@
     form.querySelector('button[type="submit"]').disabled = !canEdit;
     refreshButton.disabled = signOutButton.disabled = busy;
     const pending = Boolean(user && drafts.has(user.permissionId));
+    byId("global-sync").textContent = pending ? "Cambios pendientes" : busy ? "Sincronizando…"
+      : needsReconnect ? "Drive necesita reconexión" : token ? lastSaved ? "Guardado en Drive · " +
+      new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit" }).format(lastSaved)
+      : "Drive conectado" : "";
     saveButton.disabled = busy || !pending;
     byId("sync-pending").hidden = !pending;
     importButton.disabled = !ready || busy;
@@ -59,20 +67,72 @@
         !Object.values(localData.customCategories ?? {}).some((items) => items.length));
   }
 
+  function draftPrefix(userId) {
+    return "clarocuenta-drive-draft:" + userId;
+  }
+
   function storeDraft(userId, draft) {
-    const key = "clarocuenta-drive-draft:" + userId;
+    const previous = drafts.get(userId);
     if (draft) drafts.set(userId, draft);
     else drafts.delete(userId);
     try {
-      if (draft) localStorage.setItem(key, JSON.stringify(draft));
-      else localStorage.removeItem(key);
+      const ownKey = draftPrefix(userId) + ":" + draftInstance;
+      if (draft) {
+        const source = previous?.source;
+        draft.source = source?.key === ownKey ? source.previous : source;
+        const raw = JSON.stringify(draft);
+        localStorage.setItem(ownKey, raw);
+        draft.source = { key: ownKey, raw, previous: draft.source };
+      } else {
+        let source = previous?.source;
+        while (source) {
+          if (localStorage.getItem(source.key) === source.raw) localStorage.removeItem(source.key);
+          source = source.previous;
+        }
+      }
       return true;
     } catch {
       return false;
     }
   }
 
+  function recoverDraft(userId) {
+    if (drafts.has(userId)) return drafts.get(userId);
+    try {
+      const prefix = draftPrefix(userId);
+      const keys = [prefix];
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (key?.startsWith(prefix + ":")) keys.push(key);
+      }
+      for (const key of keys) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        let saved;
+        try { saved = JSON.parse(raw); } catch { continue; }
+        if (validPayload(saved?.next) && (!saved.original || validPayload(saved.original))) {
+          saved.source = { key, raw, previous: saved.source };
+          drafts.set(userId, saved);
+          return saved;
+        }
+      }
+    } catch {
+      // An unavailable browser store must not block access to Drive.
+    }
+  }
+
+  async function serverRequest(path, options) {
+    const response = await fetch(path, { cache: "no-store", ...options });
+    if (!response.ok) {
+      const error = new Error("Drive request failed");
+      error.status = response.status;
+      throw error;
+    }
+    return response;
+  }
+
   function storeSession() {
+    if (persistent) return;
     try {
       if (token && expiresAt > Date.now()) sessionStorage.setItem(sessionKey, JSON.stringify({ token, expiresAt }));
       else sessionStorage.removeItem(sessionKey);
@@ -93,6 +153,7 @@
 
   function disconnect() {
     conflict = false;
+    lastSaved = undefined;
     needsReconnect = false;
     expiresAt = 0;
     token = user = record = baseData = undefined;
@@ -159,7 +220,11 @@
     return matches[0];
   }
 
-  function findRecord() {
+  async function findRecord() {
+    if (persistent) {
+      serverSnapshot = await (await serverRequest("/api/drive/snapshot")).json();
+      return serverSnapshot.file ?? undefined;
+    }
     return listUnique("appProperties has { key='clarocuenta' and value='data-v1' }");
   }
 
@@ -195,8 +260,8 @@
 
   async function readRecord(file) {
     if (!file) return emptyData();
-    const response = await request(api, "files/" + file.id, { alt: "media" });
-    const payload = await response.json();
+    const payload = persistent ? serverSnapshot.snapshot :
+      await (await request(api, "files/" + file.id, { alt: "media" })).json();
     if (!validPayload(payload)) throw new Error("invalid-data");
     return payload;
   }
@@ -298,65 +363,85 @@
     const userId = user.permissionId;
     conflict = false;
     return run(async () => {
-      const latest = await findRecord();
-      let { next } = draft;
-      let remaining = false;
-      let categoryChanged = true;
-      if (latest?.id !== draft.base?.id || latest?.version !== draft.base?.version) {
-        // A missing or replaced record may have been deliberately removed in Drive.
-        if (draft.base && latest?.id !== draft.base.id) {
-          conflict = true;
-          status.textContent = "El archivo de Drive se movió o se reemplazó. Tus cambios siguen pendientes.";
-          return false;
-        }
-        const remote = await readRecord(latest);
-        ({ next, remaining } = mergeDraft(draft, remote));
-        categoryChanged = JSON.stringify(mergeCustomCategories(remote.customCategories)) !==
-          JSON.stringify(next.customCategories);
-        if (remaining && !categoryChanged) {
-          conflict = true;
-          status.textContent = "Hay cambios pendientes en movimientos o presupuestos que Drive no pudo combinar. Actualizar datos permite cargar la versión de Drive.";
-          return false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          return await writeAttempt(draft, userId);
+        } catch (error) {
+          if (error.status !== 409 || attempt === 2) throw error;
         }
       }
-      const parent = latest ? null : await findOrCreateFolder();
+    }, "No pudimos confirmar el guardado. Los cambios siguen pendientes.");
+  }
 
-      const payload = JSON.stringify(next);
-      let response;
-      if (latest) {
-        response = await request(uploadApi, "files/" + latest.id, { uploadType: "media", fields: "id,version" }, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: payload,
-        });
-      } else {
-        const boundary = crypto.randomUUID();
-        const metadata = { name: "movimientos-y-presupuestos.json", parents: [parent],
-          mimeType: "application/json", appProperties: { clarocuenta: "data-v1" } };
-        const parts = [
-          "--" + boundary, "Content-Type: application/json; charset=UTF-8", "", JSON.stringify(metadata),
-          "--" + boundary, "Content-Type: application/json; charset=UTF-8", "", payload,
-          "--" + boundary + "--", "",
-        ];
-        response = await request(uploadApi, "files", { uploadType: "multipart", fields: "id,version" }, {
-          method: "POST",
-          headers: { "Content-Type": "multipart/related; boundary=" + boundary },
-          body: parts.join("\r\n"),
-        });
-      }
-      record = await response.json();
-      baseData = next;
-      if (remaining) {
+  async function writeAttempt(draft, userId) {
+    const latest = await findRecord();
+    let { next } = draft;
+    let remaining = false;
+    let categoryChanged = true;
+    if (latest?.id !== draft.base?.id || latest?.version !== draft.base?.version) {
+      // A missing or replaced record may have been deliberately removed in Drive.
+      if (draft.base && latest?.id !== draft.base.id) {
         conflict = true;
-        status.textContent = "Categorías guardadas en Drive. Aún quedan cambios pendientes en movimientos o presupuestos.";
+        status.textContent = "El archivo de Drive se movió o se reemplazó. Tus cambios siguen pendientes.";
         return false;
       }
-      storeDraft(userId);
-      data = next;
-      render();
-      status.textContent = "Guardado en tu Google Drive.";
-      return true;
-    }, "No pudimos confirmar el guardado. Actualiza los datos desde Drive antes de reintentar.");
+      const remote = await readRecord(latest);
+      ({ next, remaining } = mergeDraft(draft, remote));
+      categoryChanged = JSON.stringify(mergeCustomCategories(remote.customCategories)) !==
+        JSON.stringify(next.customCategories);
+      if (remaining && !categoryChanged) {
+        conflict = true;
+        status.textContent = "Hay cambios pendientes en movimientos o presupuestos que Drive no pudo combinar. Actualizar datos permite cargar la versión de Drive.";
+        return false;
+      }
+    }
+    const parent = latest || persistent ? null : await findOrCreateFolder();
+
+    const payload = JSON.stringify(next);
+    let response;
+    if (persistent) {
+      response = await serverRequest("/api/drive/snapshot", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expected: latest ?? null, snapshot: next }),
+      });
+    } else if (latest) {
+      response = await request(uploadApi, "files/" + latest.id, { uploadType: "media", fields: "id,version" }, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+    } else {
+      const boundary = crypto.randomUUID();
+      const metadata = { name: "movimientos-y-presupuestos.json", parents: [parent],
+        mimeType: "application/json", appProperties: { clarocuenta: "data-v1" } };
+      const parts = [
+        "--" + boundary, "Content-Type: application/json; charset=UTF-8", "", JSON.stringify(metadata),
+        "--" + boundary, "Content-Type: application/json; charset=UTF-8", "", payload,
+        "--" + boundary + "--", "",
+      ];
+      response = await request(uploadApi, "files", { uploadType: "multipart", fields: "id,version" }, {
+        method: "POST",
+        headers: { "Content-Type": "multipart/related; boundary=" + boundary },
+        body: parts.join("\r\n"),
+      });
+    }
+    const result = await response.json();
+    record = persistent ? result.file : result;
+    lastSaved = new Date();
+    baseData = next;
+    if (remaining) {
+      conflict = true;
+      status.textContent = "Categorías guardadas en Drive. Aún quedan cambios pendientes en movimientos o presupuestos.";
+      return false;
+    }
+    storeDraft(userId);
+    const another = recoverDraft(userId);
+    data = another?.next ?? next;
+    render();
+    status.textContent = another ? "Primer borrador guardado. Quedan otros cambios pendientes."
+      : "Guardado en tu Google Drive.";
+    return true;
   }
 
   async function connect(result) {
@@ -371,7 +456,7 @@
     await connectWithToken(result.access_token, Number.isFinite(lifetime) && lifetime > 0 ? Date.now() + lifetime * 1000 : 0);
   }
 
-  async function connectWithToken(accessToken, expiry) {
+  async function connectWithToken(accessToken, expiry, verifiedUser) {
     token = accessToken;
     expiresAt = expiry;
     ready = false;
@@ -383,8 +468,8 @@
     if (editor.open) editor.close();
     render();
     const connected = await run(async () => {
-      const response = await request(api, "about", { fields: "user(emailAddress,permissionId)" });
-      const connectedUser = (await response.json()).user;
+      const connectedUser = verifiedUser ??
+        (await (await request(api, "about", { fields: "user(emailAddress,permissionId)" })).json()).user;
       if (user?.permissionId !== connectedUser.permissionId) {
         record = baseData = undefined;
         data = emptyData();
@@ -397,18 +482,7 @@
         // The original local data remains available.
       }
       await readCloud();
-      let pending = drafts.get(user.permissionId);
-      if (!pending) {
-        try {
-          const saved = JSON.parse(localStorage.getItem("clarocuenta-drive-draft:" + user.permissionId));
-          if (validPayload(saved?.next) && (!saved.original || validPayload(saved.original))) {
-            drafts.set(user.permissionId, saved);
-            pending = saved;
-          }
-        } catch {
-          // Invalid or unavailable browser storage must not block access to Drive.
-        }
-      }
+      const pending = recoverDraft(user.permissionId);
       if (pending) {
         data = pending.next;
         render();
@@ -427,7 +501,12 @@
   }
 
   function requestConnection() {
-    if (!tokenClient || busy || authorizing) return;
+    if (busy || authorizing) return;
+    if (persistent) {
+      window.location.assign("/api/auth/start");
+      return;
+    }
+    if (!tokenClient) return;
     status.textContent = "Selecciona tu cuenta de Google.";
     authorizing = true;
     updateControls();
@@ -464,10 +543,17 @@
     event.preventDefault();
     event.returnValue = "";
   });
-  signOutButton.addEventListener("click", () => {
+  signOutButton.addEventListener("click", async () => {
     if (drafts.has(user?.permissionId)) {
       status.textContent = "Guarda los cambios pendientes antes de desconectar.";
       return;
+    }
+    if (persistent) {
+      const closed = await run(async () => {
+        await serverRequest("/api/auth/logout", { method: "POST" });
+        return true;
+      }, "No pudimos cerrar la conexión de Google Drive.");
+      if (!closed) return;
     }
     disconnect();
     updateControls();
@@ -501,6 +587,23 @@
     authorizing = false;
     updateControls();
     status.textContent = "La ventana de Google se cerró o fue bloqueada. Vuelve a intentar.";
+  }
+
+  if (persistent) {
+    updateControls();
+    if (new URLSearchParams(window.location.search).get("drive") === "error") {
+      status.textContent = "Google no pudo autorizar Drive. Intenta conectar de nuevo.";
+    } else {
+      void (async () => {
+        try {
+          const { user: verified } = await (await serverRequest("/api/auth/session")).json();
+          await connectWithToken("server-session", 0, verified);
+        } catch (error) {
+          status.textContent = error.status === 401 ? "" : "No pudimos comprobar la sesión. Vuelve a intentar.";
+        }
+      })();
+    }
+    return;
   }
 
   const script = document.createElement("script");

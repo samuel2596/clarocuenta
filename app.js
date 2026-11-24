@@ -100,8 +100,6 @@ function render() {
   let income = 0;
   let expense = 0;
   const totals = new Map();
-  const movements = byId("movements");
-  movements.replaceChildren();
   for (const item of entries) {
     const credit = item.type === "income";
     if (credit) {
@@ -110,20 +108,8 @@ function render() {
       expense += item.amount;
       totals.set(item.category, (totals.get(item.category) ?? 0) + item.amount);
     }
-    const row = node("div", "", "transaction");
-    const details = document.createElement("div");
-    details.append(node("strong", item.description), node("p", item.category + " · " + item.date));
-    const amount = node("strong", (credit ? "+" : "−") + format(item.amount), credit ? "credit" : "debit");
-    const actions = node("div", "", "tools");
-    actions.append(action("Editar", () => openEditor(item)), action("Eliminar", () => {
-      if (confirm("¿Eliminar este movimiento?")) {
-        persist({ ...data, movements: data.movements.filter((entry) => entry.id !== item.id) });
-      }
-    }));
-    row.append(details, amount, actions);
-    movements.append(row);
   }
-  if (!entries.length) movements.append(node("p", "Todavía no hay movimientos en este periodo.", "empty"));
+  renderMovementList(entries);
   byId("balance").textContent = format(income - expense);
   byId("income").textContent = format(income);
   byId("expense").textContent = format(expense);
@@ -161,6 +147,56 @@ function render() {
   renderRecentMovements();
   window.dispatchEvent(new Event("clarocuenta:render"));
 }
+
+const movementQuery = byId("movement-search");
+const movementType = byId("movement-type-filter");
+const movementCategory = byId("movement-category-filter");
+
+function searchKey(value) {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es-MX").trim();
+}
+
+function renderMovementList(entries) {
+  const movements = byId("movements");
+  movements.replaceChildren();
+  const type = movementType.value;
+  const periodEntries = type ? entries.filter((item) => item.type === type) : entries;
+  const categories = [...new Set(periodEntries.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "es-MX"));
+  const previous = movementCategory.value;
+  movementCategory.replaceChildren(new Option("Todas", ""), ...categories.map((label) => new Option(label, label)));
+  movementCategory.value = categories.includes(previous) ? previous : "";
+  const query = searchKey(movementQuery.value);
+  const selected = periodEntries.filter((item) =>
+    (!movementCategory.value || item.category === movementCategory.value) && searchKey(item.description).includes(query));
+  for (const item of selected) {
+    const credit = item.type === "income";
+    const row = node("div", "", "transaction");
+    const details = document.createElement("div");
+    details.append(node("strong", item.description), node("p", item.category + " · " + item.date));
+    const amount = node("strong", (credit ? "+" : "−") + format(item.amount), credit ? "credit" : "debit");
+    const actions = node("div", "", "tools");
+    actions.append(action("Editar", () => openEditor(item)), action("Eliminar", () => {
+      if (confirm("¿Eliminar este movimiento?")) {
+        persist({ ...data, movements: data.movements.filter((entry) => entry.id !== item.id) });
+      }
+    }));
+    row.append(details, amount, actions);
+    movements.append(row);
+  }
+  if (!selected.length) movements.append(node("p", entries.length
+    ? "No hay movimientos que coincidan con los filtros."
+    : "Todavía no hay movimientos en este periodo.", "empty"));
+}
+
+function updateMovementFilters() {
+  const entries = data.movements.filter((item) => item.date.startsWith(month.value + "-"))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  renderMovementList(entries);
+}
+
+movementQuery.addEventListener("input", updateMovementFilters);
+movementType.addEventListener("change", updateMovementFilters);
+movementCategory.addEventListener("change", updateMovementFilters);
 
 function renderRecentMovements() {
   const recent = [...data.movements].reverse().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);

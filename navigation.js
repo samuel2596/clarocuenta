@@ -28,6 +28,10 @@
     }
   }
 
+  const more = byId("mobile-more");
+  for (const link of more.querySelectorAll("[data-route]")) {
+    link.addEventListener("click", () => { more.open = false; });
+  }
   window.addEventListener("hashchange", () => showRoute(true));
   showRoute();
 })();
