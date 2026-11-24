@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v28";
-const shell = ["./", "./index.html", "./cloud-config.js", "./style.css?v=28", "./app.js?v=28", "./appearance.js?v=28", "./navigation.js?v=28", "./reports.js?v=28", "./pwa.js?v=28", "./finance.js?v=28", "./apartados.js?v=28", "./cards.js?v=28", "./cloud.js?v=28", "./manifest.webmanifest?v=28", "./icon-192.png?v=2", "./icon-512.png?v=2"];
+const cacheName = prefix + ":v30";
+const shell = ["./", "./index.html", "./cloud-config.js", "./style.css?v=30", "./app.js?v=30", "./appearance.js?v=30", "./navigation.js?v=30", "./reports.js?v=30", "./pwa.js?v=30", "./finance.js?v=30", "./apartados.js?v=30", "./cards.js?v=30", "./cloud.js?v=30", "./manifest.webmanifest?v=30", "./icon-192.png?v=2", "./icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));

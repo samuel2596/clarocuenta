@@ -29,14 +29,25 @@
     const excluded = reserves.reduce((sum, item) => item.included ? sum : sum + balances.get(item.id), 0);
     byId("cash-total").textContent = format(total);
     byId("cash-reserved").textContent = format(reserved);
-    byId("cash-available").textContent = format(total - excluded);
+    const available = total - excluded;
+    byId("cash-available").textContent = format(available);
+    byId("chart-available-amount").textContent = format(available);
+    const unreserved = total - reserved;
+    const included = reserved - excluded;
+    byId("chart-free-amount").textContent = format(unreserved);
+    byId("chart-included-amount").textContent = format(included);
+    byId("chart-excluded-amount").textContent = format(excluded);
 
-    byId("chart-reserved-amount").textContent = format(reserved);
-    const share = total > 0 ? reserved / total : reserved > 0 ? 1 : 0;
-    byId("reserve-ring").style.setProperty("--reserved-share", Math.min(1, Math.max(0, share)) * 100 + "%");
-    byId("chart-reserved-context").textContent = total > 0
-      ? "De " + format(total) + " en efectivo y débito"
-      : "";
+    const chart = byId("cash-donut");
+    const canShowDistribution = total > 0 && unreserved >= 0;
+    chart.setAttribute("data-empty", String(!canShowDistribution));
+    chart.style.setProperty("--cash-free-stop", (canShowDistribution ? unreserved / total * 100 : 0) + "%");
+    chart.style.setProperty("--cash-included-stop", (canShowDistribution ? available / total * 100 : 0) + "%");
+    const note = byId("cash-chart-note");
+    note.hidden = canShowDistribution;
+    note.textContent = unreserved < 0
+      ? "El saldo de efectivo y débito no alcanza para cubrir todos los apartados."
+      : "Aún no hay saldo de efectivo y débito para distribuir.";
 
     const list = byId("reserve-list");
     list.replaceChildren(...reserves.map((item) => {

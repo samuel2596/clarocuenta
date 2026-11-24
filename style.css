@@ -226,21 +226,64 @@ dialog { background: var(--surface); }
 .overview-bottom { margin-top: 1rem; }
 .overview-chart { container-type: inline-size; }
 .overview-chart .chart-layout { justify-content: center; padding-block: .75rem; gap: clamp(.8rem, 5cqi, 3rem); }
-.overview-chart .reserve-ring {
-  width: clamp(6rem, 32cqi, 14rem);
+.overview-chart {
+  --cash-free: #258eaa;
+  --cash-included: #8d71d9;
+  --cash-excluded: #db9a3b;
+}
+.cash-chart-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1rem, 5cqi, 3rem);
+  padding-block: .75rem 1.25rem;
+}
+.cash-donut {
+  width: clamp(11rem, 38cqi, 14rem);
   max-width: 100%;
   aspect-ratio: 1;
-  flex: 0 0 auto;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--chart-reserve) var(--reserved-share, 0%), var(--secondary) 0);
+  background: conic-gradient(
+    var(--cash-free) 0 var(--cash-free-stop, 0%),
+    var(--cash-included) var(--cash-free-stop, 0%) var(--cash-included-stop, 0%),
+    var(--cash-excluded) var(--cash-included-stop, 0%) 100%
+  );
 }
-.overview-chart { --chart-reserve: #db9a3b; }
-.overview-chart .balance-chart { width: 80%; outline: .2rem solid var(--surface); }
-.chart-reserve-swatch { background: var(--chart-reserve); }
-.chart-legend .chart-reserved-context { color: var(--muted); font-size: .8rem; font-weight: 400; }
-.chart-reserved-context:empty { display: none; }
+.cash-donut[data-empty="true"] { background: var(--secondary); }
+.cash-donut-center {
+  width: 78%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  padding: .45rem;
+  background: var(--surface);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.cash-donut-center span, #cash-chart-note { color: var(--muted); font-size: .875rem; }
+.cash-donut-center strong { font-size: clamp(1rem, 4cqi, 1.6rem); }
+.cash-chart-legend { flex: 0 1 20rem; max-width: 100%; margin: 0; }
+.cash-chart-legend > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .25rem .75rem;
+  padding: .65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.cash-chart-legend dd { margin: 0; font-weight: 700; }
+.cash-free { background: var(--cash-free); }
+.cash-included { background: var(--cash-included); }
+.cash-excluded { background: var(--cash-excluded); }
+.monthly-chart { border-top: 1px solid var(--border); padding-top: .85rem; }
+.monthly-chart summary { cursor: pointer; font-weight: 650; }
+.overview-chart .balance-chart { width: clamp(6rem, 24cqi, 10rem); }
 .overview-chart .chart-legend > div + div { margin-top: .75rem; }
 .workspace .summary article { padding: clamp(.85rem, 2.2vw, 1.5rem); }
 .workspace .summary { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
