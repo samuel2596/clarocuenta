@@ -22,16 +22,22 @@
     byId("view-description").textContent = description;
     byId("workspace-period").hidden = route !== "resumen" && route !== "movimientos";
     document.title = title + " | ClaroCuenta";
+    const mobile = document.querySelector(".mobile-nav");
+    const current = mobile.querySelector('[aria-current="page"]');
+    if (mobile.clientWidth && current) {
+      const bar = mobile.getBoundingClientRect();
+      const item = current.getBoundingClientRect();
+      const margin = 6;
+      if (item.left < bar.left + margin || item.right > bar.right - margin) {
+        mobile.scrollLeft += item.left - bar.left - (bar.width - item.width) / 2;
+      }
+    }
     if (focus) {
       byId("view-title").focus({ preventScroll: true });
       window.scrollTo(0, 0);
     }
   }
 
-  const more = byId("mobile-more");
-  for (const link of more.querySelectorAll("[data-route]")) {
-    link.addEventListener("click", () => { more.open = false; });
-  }
   window.addEventListener("hashchange", () => showRoute(true));
   showRoute();
 })();
