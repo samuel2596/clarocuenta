@@ -123,6 +123,8 @@ function bar(label, value, total) {
   return item;
 }
 
+let periodTotals = { income: 0, expense: 0 };
+
 function render() {
   const entries = data.movements.filter((item) => item.date.startsWith(month.value + "-"))
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -142,6 +144,7 @@ function render() {
   byId("balance").textContent = format(income - expense);
   byId("income").textContent = format(income);
   byId("expense").textContent = format(expense);
+  periodTotals = { income, expense };
   const categories = byId("categories");
   categories.replaceChildren();
   for (const [category, value] of [...totals].sort((a, b) => b[1] - a[1])) {

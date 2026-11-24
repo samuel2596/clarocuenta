@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":angular-84fe46735d86dccd";
-const shell = ["./","./apartados.js","./app.js","./appearance.js","./cards.js","./cloud-config.js","./cloud.js","./finance.js","./icon-192.png","./icon-512.png","./index.html","./main-GIARSVTM.js","./manifest.webmanifest","./pwa.js","./reports.js","./styles-H6OE24HU.css"];
+const cacheName = prefix + ":angular-f9713003d66faea1";
+const shell = ["./","./apartados.js","./app.js","./appearance.js","./cards.js","./cloud-config.js","./cloud.js","./finance.js","./icon-192.png","./icon-512.png","./index.html","./main-MVDTW7L6.js","./manifest.webmanifest","./pwa.js","./reports.js","./styles-JGBWRC3V.css"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
