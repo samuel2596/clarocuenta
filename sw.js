@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":angular-c0d6bb3b74a3dff5";
-const shell = ["./","./apartados.c0d6bb3b74a3dff5.js","./app.c0d6bb3b74a3dff5.js","./appearance.c0d6bb3b74a3dff5.js","./cards.c0d6bb3b74a3dff5.js","./cloud-config.js","./cloud.c0d6bb3b74a3dff5.js","./finance.c0d6bb3b74a3dff5.js","./icon-192.png","./icon-512.png","./index.html","./main-4TIHMQGC.js","./manifest.webmanifest","./pwa.c0d6bb3b74a3dff5.js","./reports.c0d6bb3b74a3dff5.js","./styles-JGBWRC3V.css"];
+const cacheName = prefix + ":angular-eecdc2a8d3a4e684";
+const shell = ["./","./apartados.eecdc2a8d3a4e684.js","./app.eecdc2a8d3a4e684.js","./appearance.eecdc2a8d3a4e684.js","./cards.eecdc2a8d3a4e684.js","./cloud-config.js","./cloud.eecdc2a8d3a4e684.js","./finance.eecdc2a8d3a4e684.js","./icon-192.png","./icon-512.png","./index.html","./main-M2SFJTHG.js","./manifest.webmanifest","./pwa.eecdc2a8d3a4e684.js","./reports.eecdc2a8d3a4e684.js","./styles-7H7L3MFQ.css"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
