@@ -5,17 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#242048">
 <meta name="description" content="Organiza tus ingresos, gastos y presupuestos.">
-<link rel="manifest" href="./manifest.webmanifest?v=22">
+<link rel="manifest" href="./manifest.webmanifest?v=28">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=2">
 <link rel="apple-touch-icon" href="./icon-192.png?v=2">
-<link rel="stylesheet" href="./style.css?v=22">
+<link rel="stylesheet" href="./style.css?v=28">
 <script src="./cloud-config.js" defer></script>
-<script src="./app.js?v=22" defer></script>
-<script src="./navigation.js?v=22" defer></script>
-<script src="./appearance.js?v=22" defer></script>
-<script src="./reports.js?v=22" defer></script>
-<script src="./pwa.js?v=22" defer></script>
-<script src="./cloud.js?v=22" defer></script>
+<script src="./app.js?v=28" defer></script>
+<script src="./navigation.js?v=28" defer></script>
+<script src="./appearance.js?v=28" defer></script>
+<script src="./reports.js?v=28" defer></script>
+<script src="./pwa.js?v=28" defer></script>
+<script src="./finance.js?v=28" defer></script>
+<script src="./apartados.js?v=28" defer></script>
+<script src="./cards.js?v=28" defer></script>
+<script src="./cloud.js?v=28" defer></script>
 <title>CuentasClaras | Finanzas personales</title>
 </head>
 <body>
@@ -27,6 +30,10 @@
       <a href="#movimientos" data-route="movimientos"><span aria-hidden="true">↔</span>Movimientos</a>
       <a href="#reports" data-route="reports"><span aria-hidden="true">▤</span>Reportes</a>
       <a href="#categories-panel" data-route="categories-panel"><span aria-hidden="true">◇</span>Categorías</a>
+      <a href="#pagos" data-route="pagos"><span aria-hidden="true">◷</span>Pagos</a>
+      <a href="#cuentas" data-route="cuentas"><span aria-hidden="true">▣</span>Cuentas</a>
+      <a href="#apartados" data-route="apartados"><span aria-hidden="true">◇</span>Apartados</a>
+      <a href="#tarjetas" data-route="tarjetas"><span aria-hidden="true">▱</span>Tarjetas</a>
       <a href="#configuracion" data-route="configuracion"><span aria-hidden="true">⚙</span>Configuración</a>
     </nav>
     <nav class="mobile-nav" aria-label="Navegación móvil">
@@ -34,6 +41,10 @@
       <a href="#movimientos" data-route="movimientos">Movimientos</a>
       <a href="#reports" data-route="reports">Reportes</a>
       <a href="#categories-panel" data-route="categories-panel">Categorías</a>
+      <a href="#pagos" data-route="pagos">Pagos</a>
+      <a href="#cuentas" data-route="cuentas">Cuentas</a>
+      <a href="#apartados" data-route="apartados">Apartados</a>
+      <a href="#tarjetas" data-route="tarjetas">Tarjetas</a>
       <a href="#configuracion" data-route="configuracion">Configuración</a>
     </nav>
   </aside>
@@ -50,19 +61,27 @@
     <div id="finance-panel">
     <section id="resumen" class="workspace-view" data-view="resumen">
       <div id="theme-hero" class="theme-hero theme-art" hidden aria-hidden="true"><span class="theme-art-background"></span><span class="appearance-mark hero-mark"><i></i></span></div>
-  <section class="summary" aria-label="Resumen mensual">
-    <article class="balance"><h2>Saldo del mes</h2><strong id="balance"></strong><p>Ingresos menos gastos del periodo</p></article>
+  <section class="summary" aria-label="Saldo de efectivo y débito">
+    <article class="balance"><h2>Saldo total</h2><strong id="cash-total"></strong><p>Efectivo y débito</p></article>
+    <article><h2>Dinero apartado</h2><strong id="cash-reserved"></strong></article>
+    <article><h2>Saldo disponible</h2><strong id="cash-available"></strong></article>
+  </section>
+  <section class="summary" aria-label="Resultado mensual">
+    <article class="balance"><h2>Resultado del mes</h2><strong id="balance"></strong><p>Ingresos menos gastos del periodo</p></article>
     <article><h2>Ingresos</h2><strong id="income"></strong></article>
     <article><h2>Gastos</h2><strong id="expense"></strong></article>
   </section>
       <section class="panel overview-chart" aria-labelledby="overview-chart-title">
         <h2 id="overview-chart-title">Ingresos y gastos del mes</h2>
         <div class="chart-layout">
-          <div id="balance-chart" class="balance-chart" aria-hidden="true" data-empty="true"></div>
+          <div id="reserve-ring" class="reserve-ring" aria-hidden="true">
+            <div id="balance-chart" class="balance-chart" data-empty="true"></div>
+          </div>
           <dl class="chart-legend">
             <div><dt><span class="chart-swatch chart-income"></span>Ingresos</dt><dd id="chart-income"></dd></div>
             <div><dt><span class="chart-swatch chart-expense"></span>Gastos</dt><dd id="chart-expense"></dd></div>
             <div><dt>Saldo</dt><dd id="chart-balance"></dd></div>
+            <div><dt><span class="chart-swatch chart-reserve-swatch"></span>Dinero apartado</dt><dd id="chart-reserved-amount"></dd><dd class="chart-reserved-context" id="chart-reserved-context"></dd></div>
           </dl>
         </div>
         <p id="chart-empty">Todavía no hay ingresos ni gastos en este mes.</p>
@@ -81,12 +100,26 @@
         </div>
         <a class="recent-link" href="#movimientos">Ver todos los movimientos</a>
       </section>
+      <section class="panel" id="card-summary" hidden>
+        <div class="section-head"><h2>Deuda total en tarjetas</h2><strong id="card-total"></strong></div>
+        <div id="summary-cards"></div>
+      </section>
+      <p id="payment-alert" role="status" hidden></p>
       <div class="overview-bottom">
       <section class="panel"><h2>Presupuesto mensual</h2><form id="budget-form">
         <label for="budget">Límite de gasto en MXN</label><div class="inline"><input id="budget" type="number" min="0" max="999999999" step="0.01" required placeholder="0.00"><button type="submit">Guardar</button></div>
       </form><div id="budget-status"></div></section>
       <section class="panel"><h2>Gastos por categoría</h2><div id="categories"></div></section>
       </div>
+      <section class="panel">
+        <h2>Presupuestos por categoría</h2>
+        <form id="category-budget-form" class="finance-form">
+          <div><label for="budget-category">Categoría de gasto</label><select id="budget-category" required></select></div>
+          <div><label for="category-limit">Límite en MXN</label><input id="category-limit" type="number" min="0" max="999999999" step="0.01" required></div>
+          <button type="submit">Guardar límite</button>
+        </form>
+        <div id="category-budgets"></div>
+      </section>
     </section>
     <section id="movimientos" class="workspace-view" data-view="movimientos" hidden>
     <section class="panel"><div class="section-head"><h2>Movimientos del periodo</h2><button id="add" type="button">+ Movimiento</button></div>
@@ -96,6 +129,7 @@
         <div><label for="movement-category-filter">Categoría</label><select id="movement-category-filter"><option value="">Todas</option></select></div>
       </div>
       <div id="movements"></div>
+      <div id="period-transfers" class="finance-list"></div>
     </section>
     </section>
     <section id="categories-panel" class="workspace-view" data-view="categories-panel" hidden>
@@ -122,12 +156,103 @@
     <div id="report-results" hidden>
       <div class="report-charts">
         <section class="panel"><h3>Evolución mensual</h3><div id="report-series"></div></section>
-        <section class="panel"><h3>Ahorro mensual</h3><div id="report-savings"></div></section>
+        <section class="panel"><h3>Saldo neto mensual</h3><div id="report-savings"></div></section>
       </div>
       <section class="panel report-table"><h3>Gastos por categoría y mes</h3><div id="report-pivot"></div></section>
       <section class="panel report-table"><h3>Movimientos registrados</h3><div id="report-movements"></div></section>
     </div>
   </section>
+    <section id="pagos" class="workspace-view" data-view="pagos" hidden>
+      <section class="panel">
+        <h2>Programar pago</h2>
+        <form id="payment-form" class="finance-form">
+          <div><label for="payment-description">Concepto</label><input id="payment-description" maxlength="80" required></div>
+          <div><label for="payment-date">Vencimiento</label><input id="payment-date" type="date" required></div>
+          <div><label for="payment-amount">Monto en MXN</label><input id="payment-amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
+          <div><label for="payment-category">Categoría de gasto</label><select id="payment-category" required></select></div>
+          <div><label for="payment-account">Cuenta para el pago</label><select id="payment-account"></select></div>
+          <button type="submit">Programar</button>
+        </form>
+      </section>
+      <section class="panel"><h2>Pagos pendientes</h2><div id="scheduled-payments"></div></section>
+    </section>
+    <section id="cuentas" class="workspace-view" data-view="cuentas" hidden>
+      <section class="panel">
+        <h2>Cuentas y saldos</h2>
+        <form id="account-form" class="finance-form">
+          <div><label for="account-name">Nombre</label><input id="account-name" maxlength="48" required placeholder="Ej. Efectivo"></div>
+          <div><label for="opening-balance">Saldo inicial en MXN</label><input id="opening-balance" type="number" min="-999999999" max="999999999" step="0.01" value="0" required></div>
+          <button type="submit">Crear cuenta</button>
+        </form>
+        <div id="finance-accounts"></div>
+      </section>
+      <section class="panel">
+        <h2>Registrar transferencia</h2>
+        <form id="transfer-form" class="finance-form">
+          <div><label for="transfer-from">Cuenta de origen</label><select id="transfer-from" required></select></div>
+          <div><label for="transfer-to">Cuenta de destino</label><select id="transfer-to" required></select></div>
+          <div><label for="transfer-amount">Monto en MXN</label><input id="transfer-amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
+          <div><label for="transfer-date">Fecha</label><input id="transfer-date" type="date" required></div>
+          <button type="submit">Transferir</button>
+        </form>
+        <div id="account-transfers" class="finance-list"></div>
+      </section>
+    </section>
+    <section id="apartados" class="workspace-view" data-view="apartados" hidden>
+      <section class="panel">
+        <h2 id="reserve-title">Nuevo apartado</h2>
+        <form id="reserve-form" class="finance-form" aria-labelledby="reserve-title">
+          <div><label for="reserve-name">Nombre</label><input id="reserve-name" maxlength="48" required placeholder="Ej. Renta"></div>
+          <div><label for="reserve-goal">Meta en MXN (opcional)</label><input id="reserve-goal" type="number" min="0.01" max="999999999" step="0.01"></div>
+          <div class="reserve-description-field"><label for="reserve-description">Descripción breve (opcional)</label><input id="reserve-description" maxlength="120" placeholder="Ej. Renta de diciembre"></div>
+          <button id="reserve-save" type="submit">Crear apartado</button>
+          <button id="reserve-cancel" class="secondary" type="button" hidden>Cancelar edición</button>
+        </form>
+        <div id="reserve-list"></div>
+      </section>
+      <section id="reserve-detail" class="panel" hidden>
+        <h2 id="reserve-detail-title" tabindex="-1"></h2>
+        <strong id="reserve-balance"></strong>
+        <div id="reserve-progress"></div>
+        <form id="reserve-movement" class="finance-form">
+          <div><label for="reserve-direction">Operación</label><select id="reserve-direction"><option value="add">Agregar dinero</option><option value="take">Retirar dinero</option></select></div>
+          <div><label for="reserve-amount">Monto en MXN</label><input id="reserve-amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
+          <button type="submit">Registrar cambio</button>
+        </form>
+        <h3>Historial</h3><div id="reserve-history"></div>
+      </section>
+    </section>
+    <section id="tarjetas" class="workspace-view" data-view="tarjetas" hidden>
+      <section class="panel">
+        <h2 id="card-form-title" tabindex="-1">Nueva tarjeta</h2>
+        <form id="card-form" class="finance-form" aria-labelledby="card-form-title">
+          <div><label for="card-name">Nombre o alias</label><input id="card-name" maxlength="48" required placeholder="Ej. Tarjeta personal"></div>
+          <div><label for="card-opening">Deuda inicial en MXN</label><input id="card-opening" type="number" min="0" max="999999999" step="0.01" value="0" required></div>
+          <button id="save-card" type="submit">Crear tarjeta</button>
+          <button id="cancel-card" class="secondary" type="button" hidden>Cancelar edición</button>
+        </form>
+        <div id="card-list"></div>
+      </section>
+      <section id="card-detail" class="panel" hidden>
+        <div class="section-head"><h2 id="card-detail-title" tabindex="-1"></h2><strong id="card-detail-balance"></strong></div>
+        <p id="card-detail-opening"></p>
+        <h3>Historial</h3>
+        <div id="card-history"></div>
+      </section>
+      <section id="card-payments" class="panel" hidden>
+        <h2 id="card-payment-title" tabindex="-1">Registrar abono</h2>
+        <form id="card-payment-form" class="finance-form" aria-labelledby="card-payment-title">
+          <div><label for="card-payment-card">Tarjeta</label><select id="card-payment-card" required></select></div>
+          <div><label for="card-payment-date">Fecha</label><input id="card-payment-date" type="date" required></div>
+          <div><label for="card-payment-amount">Monto en MXN</label><input id="card-payment-amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
+          <div><label for="card-payment-account">Cuenta de origen</label><select id="card-payment-account"></select></div>
+          <div><label for="card-payment-reserve">Usar apartado (opcional)</label><select id="card-payment-reserve"></select></div>
+          <div><label for="card-payment-note">Concepto (opcional)</label><input id="card-payment-note" maxlength="80"></div>
+          <button id="save-card-payment" type="submit">Registrar abono</button>
+          <button id="cancel-card-payment" class="secondary" type="button" hidden>Cancelar edición</button>
+        </form>
+      </section>
+    </section>
     </div>
     <section id="configuracion" class="workspace-view" data-view="configuracion" hidden>
       <section class="panel appearance-panel" aria-labelledby="appearance-title">
@@ -209,6 +334,8 @@
     <div><label for="type">Tipo</label><select id="type" name="type"><option value="expense">Gasto</option><option value="income">Ingreso</option></select></div>
     <div><label for="amount">Monto en MXN</label><input id="amount" name="amount" type="number" min="0.01" max="999999999" step="0.01" required></div>
     <div><label for="date">Fecha</label><input id="date" name="date" type="date" required></div>
+    <div><label for="movement-account">Cuenta</label><select id="movement-account"></select></div>
+    <div id="movement-card-field" hidden><label for="movement-card">Tarjeta de crédito</label><select id="movement-card"></select></div>
     <div><label for="category">Categoría</label><select id="category" name="category" required></select></div>
   </div>
   <p id="editor-category-help" hidden>Crea una categoría para este tipo en <a id="editor-create-category" href="#categories-panel">Categorías</a>.</p>

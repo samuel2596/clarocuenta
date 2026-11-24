@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":v22";
-const shell = ["./", "./index.html", "./style.css?v=22", "./app.js?v=22", "./appearance.js?v=22", "./navigation.js?v=22", "./reports.js?v=22", "./pwa.js?v=22", "./cloud.js?v=22", "./manifest.webmanifest?v=22", "./icon-192.png?v=2", "./icon-512.png?v=2"];
+const cacheName = prefix + ":v28";
+const shell = ["./", "./index.html", "./cloud-config.js", "./style.css?v=28", "./app.js?v=28", "./appearance.js?v=28", "./navigation.js?v=28", "./reports.js?v=28", "./pwa.js?v=28", "./finance.js?v=28", "./apartados.js?v=28", "./cards.js?v=28", "./cloud.js?v=28", "./manifest.webmanifest?v=28", "./icon-192.png?v=2", "./icon-512.png?v=2"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
@@ -15,8 +15,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   if (!event.request.url.startsWith(self.registration.scope)) return;
-  // Always read the project configuration from the deployment.
-  if (new URL(event.request.url).pathname.endsWith("/cloud-config.js")) return;
+  if (new URL(event.request.url).pathname.endsWith("/cloud-config.js")) {
+    event.respondWith(fetch(event.request).catch(() => caches.open(cacheName)
+      .then((cache) => cache.match("./cloud-config.js"))));
+    return;
+  }
   if (event.request.mode === "navigate") {
     event.respondWith(fetch(event.request).catch(() => caches.open(cacheName)
       .then((cache) => cache.match("./"))));

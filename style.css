@@ -226,7 +226,21 @@ dialog { background: var(--surface); }
 .overview-bottom { margin-top: 1rem; }
 .overview-chart { container-type: inline-size; }
 .overview-chart .chart-layout { justify-content: center; padding-block: .75rem; gap: clamp(.8rem, 5cqi, 3rem); }
-.overview-chart .balance-chart { width: clamp(6rem, 32cqi, 14rem); max-width: 100%; }
+.overview-chart .reserve-ring {
+  width: clamp(6rem, 32cqi, 14rem);
+  max-width: 100%;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--chart-reserve) var(--reserved-share, 0%), var(--secondary) 0);
+}
+.overview-chart { --chart-reserve: #db9a3b; }
+.overview-chart .balance-chart { width: 80%; outline: .2rem solid var(--surface); }
+.chart-reserve-swatch { background: var(--chart-reserve); }
+.chart-legend .chart-reserved-context { color: var(--muted); font-size: .8rem; font-weight: 400; }
+.chart-reserved-context:empty { display: none; }
 .overview-chart .chart-legend > div + div { margin-top: .75rem; }
 .workspace .summary article { padding: clamp(.85rem, 2.2vw, 1.5rem); }
 .workspace .summary { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
@@ -423,3 +437,36 @@ dialog { background: var(--surface); }
 @media (max-width: 700px) {
   #update-notice { bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 }
+
+.finance-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: .75rem;
+  align-items: end;
+  margin-block: .8rem 1rem;
+}
+.finance-form > div, .finance-row > div { min-width: 0; }
+.finance-list:not([hidden]) { margin-top: 1rem; }
+.finance-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding-block: .7rem;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.finance-row > div { flex: 1 1 14rem; }
+.finance-row p { margin: .25rem 0 0; }
+
+.reserve-switch {
+  display: inline-flex;
+  gap: .5rem;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+}
+.reserve-switch input { width: 1.2rem; height: 1.2rem; accent-color: var(--accent); }
+#reserve-progress progress { width: 100%; accent-color: var(--accent); }
+
+.reserve-description-field { grid-column: 1 / -1; }

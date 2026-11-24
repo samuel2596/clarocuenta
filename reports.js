@@ -8,7 +8,7 @@
   const series = [
     ["income", "Ingresos"],
     ["expense", "Gastos"],
-    ["savings", "Ahorro"],
+    ["savings", "Saldo neto"],
   ];
 
   function renderOptions(container, periods, checked, labelFor, hidden) {
@@ -80,7 +80,7 @@
     const scroller = node("div", "", "report-scroll");
     scroller.tabIndex = 0;
     scroller.setAttribute("role", "region");
-    scroller.setAttribute("aria-label", metrics.length === 1 ? "Gráfica de ahorro por mes" : "Gráfica de evolución mensual");
+    scroller.setAttribute("aria-label", metrics.length === 1 ? "Gráfica de saldo neto por mes" : "Gráfica de evolución mensual");
     const groups = node("div", "", "chart-groups");
     for (const row of totals) {
       const group = node("div", "", "chart-group");
@@ -155,11 +155,11 @@
     appendRow(pivot.foot, ["Total de gastos", ...totals.map(({ expense }) => format(expense)),
       format(totals.reduce((sum, { expense }) => sum + expense, 0))], false, true);
 
-    const movements = table(byId("report-movements"), "Movimientos registrados", ["Fecha", "Concepto", "Categoría", "Tipo", "Monto"], 4);
+    const movements = table(byId("report-movements"), "Movimientos registrados", ["Fecha", "Concepto", "Categoría", "Tipo", "Cuenta o tarjeta", "Monto"], 5);
     for (const item of rows.sort((a, b) => b.date.localeCompare(a.date))) {
       const income = item.type === "income";
-      appendRow(movements.body, [item.date, item.description, item.category, income ? "Ingreso" : "Gasto",
-        (income ? "+" : "−") + format(item.amount)], false, false, 4);
+      appendRow(movements.body, [item.date, item.description, item.category, income ? "Ingreso" : "Gasto", paymentSourceLabel(item),
+        (income ? "+" : "−") + format(item.amount)], false, false, 5);
     }
   }
 

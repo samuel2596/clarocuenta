@@ -21,6 +21,16 @@
   const importButton = byId("import-local");
   const signOutButton = byId("sign-out");
   const financePanel = byId("finance-panel");
+  const collections = {
+    categoryBudgets: ["id", "period", "category", "amount"],
+    payments: ["id", "description", "date", "category", "accountId", "amount"],
+    accounts: ["id", "name", "opening"],
+    transfers: ["id", "from", "to", "date", "amount"],
+    cards: ["id", "name", "opening"],
+    cardPayments: ["id", "cardId", "date", "amount", "note", "accountId", "reserveId"],
+    reserves: ["id", "name", "goal", "included", "description"],
+    reserveMovements: ["id", "reserveId", "date", "amount"],
+  };
   const imported = new Set();
   const drafts = new Map();
   const draftInstance = crypto.randomUUID();
@@ -71,6 +81,7 @@
     importButton.disabled = !ready || busy;
     importButton.hidden = !user || imported.has(user.permissionId) ||
       (!localData.movements.length && !Object.keys(localData.budgets).length &&
+        !Object.keys(collections).some((key) => localData[key]?.length) &&
         !Object.values(localData.customCategories ?? {}).some((items) => items.length));
   }
 
@@ -257,6 +268,40 @@
     return (await response.json()).id;
   }
 
+  function validFinance(value) {
+    const text = (item) => typeof item === "string" && Boolean(item.trim());
+    const validDate = (date) => typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+      Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0, 10) === date;
+    const positive = (amount) => Number.isSafeInteger(amount) && amount > 0;
+    const validList = (key, check) => value[key] === undefined || (Array.isArray(value[key]) &&
+      value[key].every((item) => item && text(item.id) && check(item)) &&
+      new Set(value[key].map(({ id }) => id)).size === value[key].length);
+    if (!validList("accounts", ({ name, opening }) => text(name) && Number.isSafeInteger(opening))) return false;
+    if (!validList("cards", ({ name, opening }) => text(name) && name.length <= 48 &&
+      Number.isSafeInteger(opening) && opening >= 0)) return false;
+    if (!validList("reserves", ({ name, goal, included, description }) => text(name) && name.length <= 48 &&
+      (description === undefined || (typeof description === "string" && description.length <= 120)) &&
+      typeof included === "boolean" && (goal === undefined || positive(goal)))) return false;
+    const reserves = new Set((value.reserves ?? []).map(({ id }) => id));
+    const cards = new Set((value.cards ?? []).map(({ id }) => id));
+    const accounts = new Set((value.accounts ?? []).map(({ id }) => id));
+    const optionalAccount = (id) => id === undefined || id === "" || accounts.has(id);
+    return value.movements.every(({ accountId, cardId, type }) => optionalAccount(accountId) &&
+      (cardId === undefined || (type === "expense" && !accountId && cards.has(cardId)))) &&
+      validList("cardPayments", ({ cardId, date, amount, note, accountId, reserveId }) => cards.has(cardId) && validDate(date) &&
+        positive(amount) && optionalAccount(accountId) && (reserveId === undefined || reserves.has(reserveId)) &&
+        (note === undefined || (typeof note === "string" && note.length <= 80))) &&
+      validList("reserveMovements", ({ reserveId, date, amount }) =>
+        reserves.has(reserveId) && validDate(date) && Number.isSafeInteger(amount) && amount !== 0) &&
+      (!reserves.size || [...reserveBalances(value).values()].every((balance) => balance >= 0)) &&
+      validList("categoryBudgets", ({ period, category, amount }) => typeof period === "string" &&
+        /^\d{4}-(0[1-9]|1[0-2])$/.test(period) && text(category) && Number.isSafeInteger(amount) && amount >= 0) &&
+      validList("payments", ({ description, date, category, accountId, amount }) =>
+        text(description) && validDate(date) && text(category) && optionalAccount(accountId) && positive(amount)) &&
+      validList("transfers", ({ from, to, date, amount }) =>
+        from !== to && accounts.has(from) && accounts.has(to) && validDate(date) && positive(amount));
+  }
+
   function validPayload(value) {
     const custom = value?.customCategories;
     const validCategories = custom === undefined || (custom && typeof custom === "object" &&
@@ -269,7 +314,7 @@
       typeof item.category === "string" && Number.isSafeInteger(item.amount) && item.amount > 0) &&
       value.budgets && typeof value.budgets === "object" && !Array.isArray(value.budgets) &&
       Object.entries(value.budgets).every(([key, amount]) =>
-        /^\d{4}-(0[1-9]|1[0-2])$/.test(key) && Number.isSafeInteger(amount) && amount >= 0);
+        /^\d{4}-(0[1-9]|1[0-2])$/.test(key) && Number.isSafeInteger(amount) && amount >= 0) && validFinance(value);
   }
 
   async function readRecord(file) {
@@ -289,10 +334,9 @@
     render();
   }
 
-  function sameMovement(a, b) {
-    if (!a || !b) return a === b;
-    return ["id", "description", "date", "type", "category", "amount"].every((key) => a[key] === b[key]);
-  }
+  const equalFields = (fields) => (a, b) => !a || !b ? a === b : fields.every((key) => a[key] === b[key]);
+  const sameMovement = equalFields(["id", "description", "date", "type", "category", "amount", "accountId", "cardId"]);
+  const recordsById = (records) => new Map((records ?? []).map((item) => [item.id, item]));
 
   function mergeChanges(base, pending, remote, equal) {
     const values = new Map(remote);
@@ -321,14 +365,16 @@
       appearanceConflict = changed !== original && current !== original && current !== changed;
       if (changed !== original && !appearanceConflict && pending.appearance) preferences.appearance = pending.appearance;
     }
-    const movements = (snapshot) => new Map(snapshot.movements.map((item) => [item.id, item]));
+    const movements = (snapshot) => recordsById(snapshot.movements);
     const budgets = (snapshot) => new Map(Object.entries(snapshot.budgets));
 
     if (!draft.original) {
       // Old drafts contain a version but no original payload. Compare their financial data directly.
       const matches = (a, b, equal) => a.size === b.size && [...a].every(([key, value]) => equal(value, b.get(key)));
       const same = matches(movements(pending), movements(remote), sameMovement) &&
-        matches(budgets(pending), budgets(remote), Object.is);
+        matches(budgets(pending), budgets(remote), Object.is) &&
+        Object.entries(collections).every(([key, fields]) =>
+          matches(recordsById(pending[key]), recordsById(remote[key]), equalFields(fields)));
       return { next: preferences, remaining: !same };
     }
 
@@ -339,11 +385,16 @@
     if (!mergedMovements || !mergedBudgets) {
       return { next: preferences, remaining: true };
     }
-    return {
-      next: { ...preferences, movements: [...mergedMovements.values()],
-        budgets: Object.fromEntries(mergedBudgets) },
-      remaining: appearanceConflict,
-    };
+    const next = { ...preferences, movements: [...mergedMovements.values()],
+      budgets: Object.fromEntries(mergedBudgets) };
+    for (const [key, fields] of Object.entries(collections)) {
+      const merged = mergeChanges(recordsById(draft.original[key]), recordsById(pending[key]),
+        recordsById(remote[key]), equalFields(fields));
+      if (!merged) return { next: preferences, remaining: true };
+      if (merged.size || remote[key] || pending[key]) next[key] = [...merged.values()];
+    }
+    if (!validFinance(next)) return { next: preferences, remaining: true };
+    return { next, remaining: appearanceConflict };
   }
 
   async function synchronize() {
@@ -614,10 +665,26 @@
     const userId = user.permissionId;
     const existing = new Set(data.movements.map((item) => item.id));
     const next = {
+      ...data,
       movements: [...data.movements, ...localData.movements.filter((item) => !existing.has(item.id))],
       budgets: { ...localData.budgets, ...data.budgets },
       customCategories: mergeCustomCategories(data.customCategories, localData.customCategories),
     };
+    for (const key of Object.keys(collections)) {
+      if (!localData[key]?.length) continue;
+      const records = recordsById(localData[key]);
+      for (const item of data[key] ?? []) records.set(item.id, item);
+      next[key] = [...records.values()];
+    }
+    // A payment already recorded on either device stays paid when importing.
+    if (next.payments) {
+      const recorded = new Set(next.movements.map(({ id }) => id));
+      next.payments = next.payments.filter(({ id }) => !recorded.has(id));
+    }
+    if (!validFinance(next)) {
+      status.textContent = "Los datos locales no se pudieron combinar con los de Drive. Se conservaron en el dispositivo.";
+      return;
+    }
     if (!queueSave(next) || !await synchronize()) return;
     imported.add(userId);
     try {

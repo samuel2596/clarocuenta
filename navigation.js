@@ -4,8 +4,12 @@
   const routes = {
     resumen: ["Resumen", "Consulta tu saldo y revisa cómo se distribuyen tus gastos."],
     movimientos: ["Movimientos", "Registra y consulta los ingresos y gastos del periodo."],
-    reports: ["Reportes", "Compara ingresos, gastos y ahorro entre meses y años."],
+    reports: ["Reportes", "Compara ingresos, gastos y saldo neto entre meses y años."],
     "categories-panel": ["Categorías", "Organiza tus ingresos y gastos con tus propias categorías."],
+    pagos: ["Próximos pagos", "Consulta vencimientos y registra pagos realizados."],
+    cuentas: ["Cuentas", "Consulta tus saldos y registra transferencias entre tus cuentas."],
+    apartados: ["Apartados", "Reserva dinero para tus gastos y metas."],
+    tarjetas: ["Tarjetas", "Consulta tus deudas y registra compras y abonos."],
     configuracion: ["Configuración", "Administra Google Drive, el tema y la instalación de CuentasClaras."],
   };
 

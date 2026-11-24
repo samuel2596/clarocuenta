@@ -34,9 +34,12 @@ const byId = (id) => document.getElementById(id);
 const storageKey = "clarocuenta-v1";
 const money = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
 const format = (cents) => money.format(cents / 100);
-const now = new Date();
-const today = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
-  .map((part) => String(part).padStart(2, "0")).join("-");
+function localDate() {
+  const date = new Date();
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part) => String(part).padStart(2, "0")).join("-");
+}
+const today = localDate();
 const month = byId("month");
 const editor = byId("editor");
 const form = byId("movement-form");
@@ -98,6 +101,14 @@ function action(label, handler) {
   button.type = "button";
   button.addEventListener("click", handler);
   return button;
+}
+
+function financeRow(title, detail, ...buttons) {
+  const entry = node("div", "", "finance-row");
+  const description = node("div", "");
+  description.append(node("strong", title), node("p", detail));
+  entry.append(description, ...buttons);
+  return entry;
 }
 
 function bar(label, value, total) {
@@ -174,6 +185,43 @@ function searchKey(value) {
   return value.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es-MX").trim();
 }
 
+function accountLabel(id) {
+  return data.accounts?.find((account) => account.id === id)?.name ?? "Sin cuenta";
+}
+
+function cashTotal(snapshot) {
+  const opening = (snapshot.accounts ?? []).reduce((sum, account) => sum + account.opening, 0);
+  const net = snapshot.movements.reduce((sum, item) => item.cardId ? sum
+    : sum + (item.type === "income" ? item.amount : -item.amount), 0);
+  return (snapshot.cardPayments ?? []).reduce((total, payment) => total - payment.amount, opening + net);
+}
+
+function reserveBalances(snapshot) {
+  const balances = new Map((snapshot.reserves ?? []).map(({ id }) => [id, 0]));
+  for (const { reserveId, amount } of snapshot.reserveMovements ?? []) {
+    if (balances.has(reserveId)) balances.set(reserveId, balances.get(reserveId) + amount);
+  }
+  for (const { reserveId, amount } of snapshot.cardPayments ?? []) {
+    if (balances.has(reserveId)) balances.set(reserveId, balances.get(reserveId) - amount);
+  }
+  return balances;
+}
+
+function paymentSourceLabel(item) {
+  if (item.cardId) return data.cards?.find(({ id }) => id === item.cardId)?.name ?? "Tarjeta";
+  return accountLabel(item.accountId);
+}
+
+function deleteMovement(item) {
+  if (!confirm("¿Eliminar este movimiento?")) return false;
+  return persist({ ...data, movements: data.movements.filter(({ id }) => id !== item.id) });
+}
+
+function fillSelect(select, options, placeholder, preferred = select.value) {
+  select.replaceChildren(new Option(placeholder, ""), ...options.map(([id, label]) => new Option(label, id)));
+  select.value = options.some(([id]) => id === preferred) ? preferred : "";
+}
+
 function renderMovementList(entries) {
   const movements = byId("movements");
   movements.replaceChildren();
@@ -190,14 +238,10 @@ function renderMovementList(entries) {
     const credit = item.type === "income";
     const row = node("div", "", "transaction");
     const details = document.createElement("div");
-    details.append(node("strong", item.description), node("p", item.category + " · " + item.date));
+    details.append(node("strong", item.description), node("p", item.category + " · " + item.date + (item.cardId || item.accountId ? " · " + paymentSourceLabel(item) : "")));
     const amount = node("strong", (credit ? "+" : "−") + format(item.amount), credit ? "credit" : "debit");
     const actions = node("div", "", "tools");
-    actions.append(action("Editar", () => openEditor(item)), action("Eliminar", () => {
-      if (confirm("¿Eliminar este movimiento?")) {
-        persist({ ...data, movements: data.movements.filter((entry) => entry.id !== item.id) });
-      }
-    }));
+    actions.append(action("Editar", () => openEditor(item)), action("Eliminar", () => deleteMovement(item)));
     row.append(details, amount, actions);
     movements.append(row);
   }
@@ -281,6 +325,16 @@ function setCategories(current) {
   if (typeof current === "string") fields.category.value = current;
 }
 
+function cardOptions() {
+  return (data.cards ?? []).map(({ id, name }) => [id, name]);
+}
+
+function updateMovementPaymentSource() {
+  const field = byId("movement-card-field");
+  field.hidden = fields.type.value !== "expense" || !data.cards?.length;
+  byId("movement-account").disabled = !field.hidden && Boolean(byId("movement-card").value);
+}
+
 function openEditor(item) {
   editingId = item?.id;
   byId("editor-title").textContent = item ? "Editar movimiento" : "Nuevo movimiento";
@@ -290,6 +344,9 @@ function openEditor(item) {
   fields.amount.value = item ? (item.amount / 100).toFixed(2) : "";
   fields.date.value = item?.date ?? (today.startsWith(month.value) ? today : month.value + "-01");
   setCategories(item?.category);
+  fillSelect(byId("movement-account"), (data.accounts ?? []).map(({ id, name }) => [id, name]), "Sin cuenta", item?.accountId ?? "");
+  fillSelect(byId("movement-card"), cardOptions(), "Sin tarjeta", item?.cardId ?? "");
+  updateMovementPaymentSource();
   editor.showModal();
 }
 
@@ -304,7 +361,11 @@ month.addEventListener("change", () => {
   if (!month.value) month.value = today.slice(0, 7);
   render();
 });
-fields.type.addEventListener("change", setCategories);
+fields.type.addEventListener("change", () => {
+  setCategories();
+  updateMovementPaymentSource();
+});
+byId("movement-card").addEventListener("change", updateMovementPaymentSource);
 fields.description.addEventListener("input", () => fields.description.setCustomValidity(""));
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -322,6 +383,10 @@ form.addEventListener("submit", async (event) => {
     category: fields.category.value,
     amount: Math.round(Number(fields.amount.value) * 100),
   };
+  const accountId = byId("movement-account").value;
+  const cardId = byId("movement-card").value;
+  if (item.type === "expense" && data.cards?.some(({ id }) => id === cardId)) item.cardId = cardId;
+  else if (accountId) item.accountId = accountId;
   const previousMonth = month.value;
   month.value = item.date.slice(0, 7);
   const movements = [...data.movements.filter((entry) => entry.id !== editingId), item];
