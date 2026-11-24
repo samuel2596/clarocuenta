@@ -175,7 +175,7 @@
     flushCategory = null;
     ready = false;
     saveToCloud = null;
-    reloadSystem = () => window.location.reload();
+    reloadSystem = reloadPage;
     byId("category-status").textContent = "";
     if (editor.open) editor.close();
     data = localData;
@@ -486,7 +486,7 @@
     ready = false;
     saveToCloud = queueSave;
     flushCategory = synchronize;
-    reloadSystem = synchronize;
+    reloadSystem = () => notifyUpdate(synchronize);
     byId("category-status").textContent = "";
     if (!user) data = emptyData();
     if (editor.open) editor.close();
@@ -549,7 +549,22 @@
   promptButton.addEventListener("click", requestConnection);
   reconnectButton.addEventListener("click", requestConnection);
   saveButton.addEventListener("click", synchronize);
-  refreshButton.addEventListener("click", async () => {
+  async function notifyUpdate(update) {
+    if (busy || !token) return;
+    if (editor.open) {
+      showUpdateNotice("Cierra el editor de movimientos antes de actualizar.");
+      return;
+    }
+    showUpdateNotice("Actualizando datos de Google Drive…", true);
+    try {
+      await update();
+      showUpdateNotice(status.textContent);
+    } catch {
+      showUpdateNotice("No se pudo completar la actualización. Intenta de nuevo.");
+    }
+  }
+
+  async function refreshFromButton() {
     const userId = user?.permissionId;
     const draft = drafts.get(userId);
     if (!draft) return refresh();
@@ -566,7 +581,8 @@
       storeDraft(userId);
       status.textContent = "Datos actualizados desde Drive.";
     }, "No se pudo cargar la versión de Drive. Conservamos tus cambios pendientes.");
-  });
+  }
+  refreshButton.addEventListener("click", () => notifyUpdate(refreshFromButton));
   window.setInterval(synchronize, 5 * 60 * 1000);
   window.addEventListener("beforeunload", (event) => {
     if (!drafts.size) return;

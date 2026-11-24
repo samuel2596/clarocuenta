@@ -48,7 +48,22 @@ let localData = data;
 let saveToCloud = null;
 let driveAppearanceAccount;
 let flushCategory = null;
-let reloadSystem = () => window.location.reload();
+const reloadMarker = "clarocuenta:manual-reload";
+let noticeTimer;
+function showUpdateNotice(message, running = false) {
+  const notice = byId("update-notice");
+  window.clearTimeout(noticeTimer);
+  notice.textContent = message;
+  if (!running) noticeTimer = window.setTimeout(() => { notice.textContent = ""; }, 6500);
+}
+
+function reloadPage() {
+  byId("reload-system").disabled = true;
+  showUpdateNotice("Recargando la aplicación…", true);
+  try { sessionStorage.setItem(reloadMarker, "1"); } catch {}
+  window.setTimeout(() => window.location.reload(), 250);
+}
+let reloadSystem = reloadPage;
 month.value = today.slice(0, 7);
 try {
   const saved = localStorage.getItem(storageKey);
@@ -345,6 +360,12 @@ categoryForm.addEventListener("submit", async (event) => {
 });
 byId("create-category").disabled = false;
 byId("reload-system").addEventListener("click", () => reloadSystem());
+try {
+  if (sessionStorage.getItem(reloadMarker)) {
+    sessionStorage.removeItem(reloadMarker);
+    showUpdateNotice("Aplicación recargada.");
+  }
+} catch {}
 
 window.addEventListener("storage", (event) => {
   if (event.key === storageKey) {

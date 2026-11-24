@@ -404,3 +404,22 @@ dialog { background: var(--surface); }
   #drive-prompt .actions button { width: 100%; }
   #drive-prompt-connect { grid-row: 1; }
 }
+
+#update-notice {
+  position: fixed;
+  z-index: 10;
+  inset: auto 1rem 1rem auto;
+  max-width: min(28rem, calc(100% - 2rem));
+  pointer-events: none;
+}
+#update-notice:not(:empty) {
+  padding: .8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: .9rem;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 28px #0003;
+}
+@media (max-width: 700px) {
+  #update-notice { bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+}
