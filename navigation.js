@@ -6,7 +6,7 @@
     movimientos: ["Movimientos", "Registra y consulta los ingresos y gastos del periodo."],
     reports: ["Reportes", "Compara ingresos, gastos y ahorro entre meses y años."],
     "categories-panel": ["Categorías", "Organiza tus ingresos y gastos con tus propias categorías."],
-    configuracion: ["Configuración", "Administra Google Drive, el tema y la instalación de ClaroCuenta."],
+    configuracion: ["Configuración", "Administra Google Drive, el tema y la instalación de CuentasClaras."],
   };
 
   function showRoute(focus = false) {
@@ -21,7 +21,7 @@
     byId("view-title").textContent = title;
     byId("view-description").textContent = description;
     byId("workspace-period").hidden = route !== "resumen" && route !== "movimientos";
-    document.title = title + " | ClaroCuenta";
+    document.title = title + " | CuentasClaras";
     const mobile = document.querySelector(".mobile-nav");
     const current = mobile.querySelector('[aria-current="page"]');
     if (mobile.clientWidth && current) {

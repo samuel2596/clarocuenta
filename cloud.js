@@ -8,6 +8,10 @@
   const uploadApi = "https://www.googleapis.com/upload/drive/v3/";
   const folderMime = "application/vnd.google-apps.folder";
   const account = byId("account");
+  const prompt = byId("drive-prompt");
+  const promptButton = byId("drive-prompt-connect");
+  const promptStatus = byId("drive-prompt-status");
+  let startupChecked = false;
   const status = byId("account-status");
   const connectButton = byId("connect-drive");
   const reconnectButton = byId("reconnect-drive");
@@ -43,6 +47,8 @@
     connectButton.textContent = needsReconnect ? "Reconectar Google Drive" : "Conectar Google Drive";
     reconnectButton.hidden = !needsReconnect || Boolean(token);
     reconnectButton.disabled = connectButton.disabled;
+    promptButton.disabled = connectButton.disabled;
+    promptButton.textContent = connectButton.textContent;
     byId("account-session").hidden = !token;
     byId("account-email").textContent = user?.emailAddress ?? "";
     const reload = byId("reload-system");
@@ -66,6 +72,12 @@
     importButton.hidden = !user || imported.has(user.permissionId) ||
       (!localData.movements.length && !Object.keys(localData.budgets).length &&
         !Object.values(localData.customCategories ?? {}).some((items) => items.length));
+  }
+
+  function checkStartupConnection() {
+    if (startupChecked) return;
+    startupChecked = true;
+    if (!token && !prompt.open) prompt.showModal();
   }
 
   function draftPrefix(userId) {
@@ -461,6 +473,7 @@
     if (result.error || !result.access_token ||
         !google.accounts.oauth2.hasGrantedAllScopes(result, scope)) {
       status.textContent = "Google Drive necesita tu autorización para conectar la carpeta.";
+      promptStatus.textContent = status.textContent;
       return;
     }
     const lifetime = Number(result.expires_in);
@@ -502,8 +515,11 @@
       needsReconnect = false;
       storeSession();
       status.textContent = "Google Drive conectado.";
+      if (prompt.open) prompt.close();
+      promptStatus.textContent = "";
       return true;
     }, "No se pudo abrir ClaroCuenta en Drive. Revisa la conexión y vuelve a intentarlo.");
+    if (!connected) promptStatus.textContent = status.textContent;
     if (!connected && !user) {
       const expired = needsReconnect;
       disconnect();
@@ -520,6 +536,7 @@
     }
     if (!tokenClient) return;
     status.textContent = "Selecciona tu cuenta de Google.";
+    promptStatus.textContent = status.textContent;
     authorizing = true;
     updateControls();
     try {
@@ -529,6 +546,7 @@
     }
   }
   connectButton.addEventListener("click", requestConnection);
+  promptButton.addEventListener("click", requestConnection);
   reconnectButton.addEventListener("click", requestConnection);
   saveButton.addEventListener("click", synchronize);
   refreshButton.addEventListener("click", async () => {
@@ -599,12 +617,15 @@
     authorizing = false;
     updateControls();
     status.textContent = "La ventana de Google se cerró o fue bloqueada. Vuelve a intentar.";
+    promptStatus.textContent = status.textContent;
   }
 
   if (persistent) {
     updateControls();
     if (new URLSearchParams(window.location.search).get("drive") === "error") {
       status.textContent = "Google no pudo autorizar Drive. Intenta conectar de nuevo.";
+      promptStatus.textContent = status.textContent;
+      checkStartupConnection();
     } else {
       void (async () => {
         try {
@@ -612,6 +633,8 @@
           await connectWithToken("server-session", 0, verified);
         } catch (error) {
           status.textContent = error.status === 401 ? "" : "No pudimos comprobar la sesión. Vuelve a intentar.";
+        } finally {
+          checkStartupConnection();
         }
       })();
     }
@@ -620,7 +643,7 @@
 
   const script = document.createElement("script");
   script.src = "https://accounts.google.com/gsi/client";
-  script.addEventListener("load", () => {
+  script.addEventListener("load", async () => {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope,
@@ -633,15 +656,25 @@
     try {
       const saved = JSON.parse(sessionStorage.getItem(sessionKey));
       if (typeof saved?.token === "string" && Number.isFinite(saved.expiresAt)) {
-        if (saved.expiresAt > Date.now()) void connectWithToken(saved.token, saved.expiresAt);
+        if (saved.expiresAt > Date.now()) await connectWithToken(saved.token, saved.expiresAt);
         else expireSession();
       }
     } catch {
       // A blocked or unavailable session store does not prevent manual connection.
     }
+    checkStartupConnection();
   });
   script.addEventListener("error", () => {
     status.textContent = "No se pudo cargar la conexión con Google. Revisa tu conexión y recarga.";
+    promptStatus.textContent = status.textContent;
+    checkStartupConnection();
   });
+  // Show the prompt while Google loads unless a session might still be restorable.
+  let canRestore = false;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(sessionKey));
+    canRestore = Boolean(saved?.token && saved.expiresAt > Date.now());
+  } catch {}
+  if (!canRestore) checkStartupConnection();
   document.head.append(script);
 })();
