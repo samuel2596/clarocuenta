@@ -1,6 +1,6 @@
 const prefix = "clarocuenta:" + self.registration.scope;
-const cacheName = prefix + ":angular-8137258e3f82b556";
-const shell = ["./","./apartados.8137258e3f82b556.js","./app.8137258e3f82b556.js","./appearance.8137258e3f82b556.js","./cards.8137258e3f82b556.js","./cloud-config.js","./cloud.8137258e3f82b556.js","./finance.8137258e3f82b556.js","./icon-192.png","./icon-512.png","./index.html","./main-4WVWBDPM.js","./manifest.webmanifest","./pwa.8137258e3f82b556.js","./reports.8137258e3f82b556.js","./styles-EYTCLBHE.css"];
+const cacheName = prefix + ":angular-d61693aea7574c2e";
+const shell = ["./","./apartados.d61693aea7574c2e.js","./app.d61693aea7574c2e.js","./appearance.d61693aea7574c2e.js","./cards.d61693aea7574c2e.js","./cloud-config.js","./cloud.d61693aea7574c2e.js","./finance.d61693aea7574c2e.js","./icon-192.png","./icon-512.png","./index.html","./main-MGSHRXJU.js","./manifest.webmanifest","./pwa.d61693aea7574c2e.js","./reports.d61693aea7574c2e.js","./styles-K73FYFPZ.css"];
 
 self.addEventListener("install", (event) => {
   const requests = shell.map((path) => new Request(new URL(path, self.registration.scope), { cache: "reload" }));
